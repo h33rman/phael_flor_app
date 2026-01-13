@@ -1,0 +1,70 @@
+{
+    "app_name": "Phael Flor Catalog",
+    "brands": "Brands",
+    "products": "Products",
+    "search": "Search",
+    "search_placeholder": "Search for a product...",
+    "all_brands": "All brands",
+    "no_products": "No products found",
+    "offline_mode": "Offline mode",
+    "loading": "Loading...",
+    "skip": "Skip",
+    "next": "Next",
+    "get_started": "Get Started",
+    "choose_language": "Choose your language",
+    "language_subtitle": "You can change this anytime in settings",
+    "onboarding": {
+        "welcome_title": "Welcome to Phael Flor",
+        "welcome_desc": "Discover our collection of quality natural products, spices and essential oils",
+        "search_title": "Fast Search",
+        "search_desc": "Easily find your favorite products with our smart search",
+        "offline_title": "Available Offline",
+        "offline_desc": "Browse the catalog even without an internet connection"
+    },
+    "home": {
+        "title": "Catalog",
+        "all": "All",
+        "filter_by_brand": "Filter by brand"
+    },
+    "product_detail": {
+        "physical": "Characteristics",
+        "about": "About",
+        "usage": "Usage",
+        "scientific_name": "Scientific name",
+        "form": "Form",
+        "category": "Category",
+        "weight_volume": "Weight / Volume",
+        "ingredients": "Ingredients",
+        "certifications": "Certifications",
+        "tags": "Tags",
+        "benefits": "Benefits",
+        "usage_tips": "Usage tips"
+    },
+    "forms": {
+        "powder": "Powder",
+        "liquid": "Liquid",
+        "leaf": "Leaf",
+        "bark": "Bark",
+        "stick": "Stick",
+        "seed": "Seed",
+        "root": "Root",
+        "flower": "Flower",
+        "gel": "Gel",
+        "oil": "Oil",
+        "paste": "Paste",
+        "whole": "Whole"
+    },
+    "categories": {
+        "essential_oil": "Essential Oil",
+        "spice": "Spice",
+        "herb": "Aromatic Herb",
+        "shampoo": "Shampoo",
+        "body_care": "Body Care",
+        "soap": "Soap",
+        "infusion": "Herbal Tea",
+        "supplement": "Food Supplement",
+        "aromatherapy": "Aromatherapy",
+        "cooking": "Cooking",
+        "cleaning": "Cleaning"
+    }
+}

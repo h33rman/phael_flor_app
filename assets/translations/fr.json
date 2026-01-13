@@ -1,0 +1,70 @@
+{
+    "app_name": "Phael Flor Catalog",
+    "brands": "Marques",
+    "products": "Produits",
+    "search": "Rechercher",
+    "search_placeholder": "Rechercher un produit...",
+    "all_brands": "Toutes les marques",
+    "no_products": "Aucun produit trouvé",
+    "offline_mode": "Mode hors ligne",
+    "loading": "Chargement...",
+    "skip": "Passer",
+    "next": "Suivant",
+    "get_started": "Commencer",
+    "choose_language": "Choisissez votre langue",
+    "language_subtitle": "Vous pouvez changer à tout moment dans les paramètres",
+    "onboarding": {
+        "welcome_title": "Bienvenue chez Phael Flor",
+        "welcome_desc": "Découvrez notre collection de produits naturels, épices et huiles essentielles de qualité",
+        "search_title": "Recherche rapide",
+        "search_desc": "Trouvez facilement vos produits préférés grâce à notre recherche intelligente",
+        "offline_title": "Disponible hors ligne",
+        "offline_desc": "Consultez le catalogue même sans connexion internet"
+    },
+    "home": {
+        "title": "Catalogue",
+        "all": "Tout",
+        "filter_by_brand": "Filtrer par marque"
+    },
+    "product_detail": {
+        "physical": "Caractéristiques",
+        "about": "À propos",
+        "usage": "Utilisation",
+        "scientific_name": "Nom scientifique",
+        "form": "Forme",
+        "category": "Catégorie",
+        "weight_volume": "Poids / Volume",
+        "ingredients": "Ingrédients",
+        "certifications": "Certifications",
+        "tags": "Tags",
+        "benefits": "Bienfaits",
+        "usage_tips": "Conseils d'utilisation"
+    },
+    "forms": {
+        "powder": "Poudre",
+        "liquid": "Liquide",
+        "leaf": "Feuille",
+        "bark": "Écorce",
+        "stick": "Bâton",
+        "seed": "Graine",
+        "root": "Racine",
+        "flower": "Fleur",
+        "gel": "Gel",
+        "oil": "Huile",
+        "paste": "Pâte",
+        "whole": "Entier"
+    },
+    "categories": {
+        "essential_oil": "Huile Essentielle",
+        "spice": "Épice",
+        "herb": "Herbe Aromatique",
+        "shampoo": "Shampooing",
+        "body_care": "Soin Corporel",
+        "soap": "Savon",
+        "infusion": "Tisane",
+        "supplement": "Complément Alimentaire",
+        "aromatherapy": "Aromathérapie",
+        "cooking": "Cuisine",
+        "cleaning": "Nettoyage"
+    }
+}
