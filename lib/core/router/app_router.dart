@@ -57,6 +57,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
 
+      // Article detail
+      GoRoute(
+        path: '/article/:id',
+        name: 'article',
+        builder: (context, state) {
+          final articleId = state.pathParameters['id']!;
+          return ArticleDetailScreen(articleId: articleId);
+        },
+      ),
+
+      // Favorites
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        builder: (context, state) => const FavoritesScreen(),
+      ),
+
       // Settings
       GoRoute(
         path: '/settings',

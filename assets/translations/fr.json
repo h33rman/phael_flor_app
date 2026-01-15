@@ -24,7 +24,22 @@
     "home": {
         "title": "Catalogue",
         "all": "Tout",
-        "filter_by_brand": "Filtrer par marque"
+        "filter_by_brand": "Filtrer par marque",
+        "greeting": "Bonjour !",
+        "subtitle": "Découvrez nos produits naturels",
+        "banner_title": "Conseils & Bien-être 🌿",
+        "banner_subtitle": "Explorez nos articles et astuces pour votre santé.",
+        "banner_button": "Lire les articles",
+        "search_hint": "Rechercher des produits...",
+        "categories": "Catégories",
+        "popular": "Produits populaires",
+        "view_all": "Voir"
+    },
+    "favorites": {
+        "title": "Favoris",
+        "empty_title": "Votre Jardin est Vide",
+        "empty_subtitle": "Commencez à planter des graines en ajoutant des produits à vos favoris.",
+        "start_exploring": "Explorer les Produits"
     },
     "product_detail": {
         "physical": "Caractéristiques",
@@ -104,9 +119,47 @@
         "guest_desc": "Connectez-vous pour plus de fonctionnalités",
         "login": "Connexion"
     },
+    "stores": {
+        "title": "Nos Boutiques",
+        "empty": "Aucune boutique disponible",
+        "phone": "Téléphone",
+        "email": "Email",
+        "directions": "Itinéraire"
+    },
+    "product": {
+        "view_details": "Voir détails",
+        "add_to_cart": "Ajouter au panier",
+        "tabs": {
+            "characteristics": "Caractéristiques",
+            "about": "À propos",
+            "usage": "Utilisation"
+        },
+        "ingredients": "Ingrédients",
+        "certifications": "Certifications"
+    },
     "common": {
         "error": "Erreur",
         "retry": "Réessayer",
         "view": "Voir"
+    },
+    "empty": {
+        "favorites_title": "Aucun favori",
+        "favorites_subtitle": "Appuyez sur ❤️ pour ajouter des produits",
+        "search_title": "Aucun résultat",
+        "search_subtitle": "Essayez avec d'autres termes",
+        "no_data": "Aucune information disponible"
+    },
+    "nav": {
+        "home": "Accueil",
+        "tips": "Conseils",
+        "stores": "Boutiques",
+        "profile": "Profil"
+    },
+    "filter": {
+        "title": "Filtres",
+        "reset": "Réinitialiser",
+        "apply": "Appliquer",
+        "brands": "Marques",
+        "forms": "Formes"
     }
 }

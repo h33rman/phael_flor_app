@@ -95,4 +95,16 @@ class SupabaseDataSource {
     final response = await _client.from('category_labels').select();
     return List<Map<String, dynamic>>.from(response);
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ARTICLES (Journal)
+  // ═══════════════════════════════════════════════════════════════
+  Future<List<Map<String, dynamic>>> fetchArticles() async {
+    final response = await _client
+        .from('articles')
+        .select()
+        .eq('is_active', true)
+        .order('published_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

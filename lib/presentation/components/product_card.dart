@@ -90,9 +90,7 @@ class ProductCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isFavorite
-                              ? colorScheme.errorContainer
-                              : colorScheme.surface.withValues(alpha: 0.9),
+                          color: colorScheme.surface.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -103,10 +101,10 @@ class ProductCard extends StatelessWidget {
                           ],
                         ),
                         child: Icon(
-                          isFavorite ? LucideIcons.heartOff : LucideIcons.heart,
+                          isFavorite ? Icons.favorite : LucideIcons.heart,
                           size: 18,
                           color: isFavorite
-                              ? colorScheme.onErrorContainer
+                              ? colorScheme.primary
                               : colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -235,36 +233,37 @@ class ProductCard extends StatelessWidget {
                           const SizedBox.shrink(),
 
                         // View button - Material 3 FilledButton style
-                        FilledButton(
-                          onPressed: onTap,
-                          style: FilledButton.styleFrom(
+                        // View button - Text + Icon
+                        GestureDetector(
+                          onTap: onTap,
+                          child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                              horizontal: 10,
+                              vertical: 6,
                             ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary,
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'Voir',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'common.view'.tr(),
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                LucideIcons.arrowRight,
-                                size: 14,
-                                color: colorScheme.onPrimary,
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Icon(
+                                  LucideIcons.arrowRight,
+                                  size: 14,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],

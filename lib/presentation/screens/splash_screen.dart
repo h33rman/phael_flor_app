@@ -20,21 +20,16 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(seconds: 2));
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
     if (!mounted) return;
 
-    // TODO: Restore this check for production
-    // final prefs = await SharedPreferences.getInstance();
-    // final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-    // if (hasSeenOnboarding) {
-    //   context.go('/home');
-    // } else {
-    //   context.go('/onboarding');
-    // }
-
-    // For testing: always show language selector first
-    context.go('/language');
+    if (hasSeenOnboarding) {
+      context.go('/home');
+    } else {
+      context.go('/language');
+    }
   }
 
   @override

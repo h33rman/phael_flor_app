@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
 
@@ -81,18 +82,163 @@ class CategoryLabels extends Table {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TABLE: Favorites
+// ═══════════════════════════════════════════════════════════════
+class Favorites extends Table {
+  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
+  TextColumn get productId => text().nullable().references(Products, #id)();
+  TextColumn get articleId => text().nullable().references(Articles, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABLE: Articles (Tips & Blog)
+// ═══════════════════════════════════════════════════════════════
+class Articles extends Table {
+  TextColumn get id => text()();
+
+  // Content
+  TextColumn get titleFr => text()();
+  TextColumn get titleEn => text().nullable()();
+  TextColumn get excerptFr => text().nullable()();
+  TextColumn get excerptEn => text().nullable()();
+  TextColumn get contentFr => text().nullable()(); // HTML or Markdown
+  TextColumn get contentEn => text().nullable()(); // HTML or Markdown
+
+  // Metadata
+  TextColumn get category => text()(); // 'tip', 'article', 'promotion'
+  TextColumn get tags => text().nullable()(); // JSON List<String>
+  TextColumn get featureImageUrl => text().nullable()();
+  TextColumn get relatedProductIds => text().nullable()(); // JSON List<String>
+
+  IntColumn get readTime => integer().nullable()(); // minutes
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get publishedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DATABASE
 // ═══════════════════════════════════════════════════════════════
-@DriftDatabase(tables: [Brands, Products, FormLabels, CategoryLabels])
+@DriftDatabase(
+  tables: [Brands, Products, FormLabels, CategoryLabels, Favorites, Articles],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 4;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'phael_flor_db');
   }
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // Version 2: Added Favorites table
+          await m.createTable(favorites);
+        }
+        if (from < 3) {
+          // Version 3: Added Articles table
+          await m.createTable(articles);
+        }
+        if (from < 4) {
+          // Version 4: Recreating Favorites table for Articles support (PK changed)
+          // Note: This drops existing favorites. In a prod app, we'd migrate data.
+          await m.deleteTable(favorites.actualTableName);
+          await m.createTable(favorites);
+        }
+      },
+    );
+  }
+
+  // ... (Existing Brands/Product queries) ...
+
+  // ═══════════════════════════════════════════════════════════════
+  // FAVORITES QUERIES
+  // ═══════════════════════════════════════════════════════════════
+  Stream<List<String>> watchFavoriteProductIds() {
+    return (select(
+      favorites,
+    )..where((f) => f.productId.isNotNull())).map((f) => f.productId!).watch();
+  }
+
+  Stream<List<String>> watchFavoriteArticleIds() {
+    return (select(
+      favorites,
+    )..where((f) => f.articleId.isNotNull())).map((f) => f.articleId!).watch();
+  }
+
+  Future<List<String?>> getFavoriteIds() {
+    return select(favorites).map((f) => f.productId).get();
+  }
+
+  Future<void> toggleProductFavorite(String id) async {
+    final exists = await (select(
+      favorites,
+    )..where((f) => f.productId.equals(id))).getSingleOrNull();
+
+    if (exists != null) {
+      await (delete(favorites)..where((f) => f.productId.equals(id))).go();
+    } else {
+      await into(favorites).insert(
+        FavoritesCompanion(productId: Value(id), articleId: const Value(null)),
+      );
+    }
+  }
+
+  Future<void> toggleArticleFavorite(String id) async {
+    final exists = await (select(
+      favorites,
+    )..where((f) => f.articleId.equals(id))).getSingleOrNull();
+
+    if (exists != null) {
+      await (delete(favorites)..where((f) => f.articleId.equals(id))).go();
+    } else {
+      await into(favorites).insert(
+        FavoritesCompanion(articleId: Value(id), productId: const Value(null)),
+      );
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ARTICLES QUERIES
+
+  // ═══════════════════════════════════════════════════════════════
+  // ARTICLES QUERIES
+  // ═══════════════════════════════════════════════════════════════
+  Future<List<Article>> getAllArticles() {
+    return (select(articles)..orderBy([
+          (t) =>
+              OrderingTerm(expression: t.publishedAt, mode: OrderingMode.desc),
+        ]))
+        .get();
+  }
+
+  Future<Article?> getArticleById(String id) {
+    return (select(articles)..where((a) => a.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<void> insertArticles(List<ArticlesCompanion> list) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(articles, list);
+    });
+  }
+
+  Future<void> deleteAllArticles() => delete(articles).go();
+
+  // ... (rest of the class)
 
   // ═══════════════════════════════════════════════════════════════
   // BRAND QUERIES
@@ -133,6 +279,61 @@ class AppDatabase extends _$AppDatabase {
               p.tags.lower().like(searchPattern),
         ))
         .get();
+  }
+
+  /// Paginated fetch with complex filtering
+  Future<List<Product>> getProductsPaginated({
+    required int limit,
+    required int offset,
+    String? searchQuery,
+    List<String>? brandIds,
+    List<String>? forms,
+    String? category,
+  }) {
+    final query = select(products);
+
+    // Apply filters via where clauses
+    query.where((p) {
+      final List<Expression<bool>> conditions = [];
+
+      // 1. Search Query
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        final pattern = '%${searchQuery.toLowerCase()}%';
+        conditions.add(
+          p.nameFr.lower().like(pattern) |
+              p.nameEn.lower().like(pattern) |
+              p.scientificName.lower().like(pattern) |
+              p.tags.lower().like(pattern),
+        );
+      }
+
+      // 2. Brand Filter
+      if (brandIds != null && brandIds.isNotEmpty) {
+        conditions.add(p.brandId.isIn(brandIds));
+      }
+
+      // 3. Form Filter (Stored as string in DB)
+      if (forms != null && forms.isNotEmpty) {
+        conditions.add(p.form.isIn(forms));
+      }
+
+      // 4. Category Filter
+      if (category != null && category.isNotEmpty) {
+        conditions.add(p.category.equals(category));
+      }
+
+      // Combine all conditions with AND
+      if (conditions.isEmpty) return const Constant(true);
+      return conditions.reduce((a, b) => a & b);
+    });
+
+    // Apply pagination
+    query.limit(limit, offset: offset);
+
+    // Ensure deterministic order
+    query.orderBy([(t) => OrderingTerm(expression: t.nameFr)]);
+
+    return query.get();
   }
 
   Future<void> insertOrUpdateProduct(ProductsCompanion product) =>

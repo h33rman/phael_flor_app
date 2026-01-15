@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// Reusable empty state widget with icon, title, and optional subtitle
 class EmptyState extends StatelessWidget {
@@ -20,19 +21,19 @@ class EmptyState extends StatelessWidget {
 
   /// Preset for no favorites
   factory EmptyState.noFavorites() {
-    return const EmptyState(
+    return EmptyState(
       icon: LucideIcons.heart,
-      title: 'Aucun favori',
-      subtitle: 'Appuyez sur ❤️ pour ajouter des produits',
+      title: 'empty.favorites_title'.tr(),
+      subtitle: 'empty.favorites_subtitle'.tr(),
     );
   }
 
   /// Preset for no search results
   factory EmptyState.noResults() {
-    return const EmptyState(
+    return EmptyState(
       icon: LucideIcons.searchX,
-      title: 'Aucun résultat',
-      subtitle: 'Essayez avec d\'autres termes',
+      title: 'empty.search_title'.tr(),
+      subtitle: 'empty.search_subtitle'.tr(),
     );
   }
 
@@ -40,7 +41,7 @@ class EmptyState extends StatelessWidget {
   factory EmptyState.noData({String? message}) {
     return EmptyState(
       icon: LucideIcons.info,
-      title: message ?? 'Aucune information disponible',
+      title: message ?? 'empty.no_data'.tr(),
     );
   }
 
@@ -49,36 +50,38 @@ class EmptyState extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: iconSize,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: iconSize,
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
               ),
-              textAlign: TextAlign.center,
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Text(
-                subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (action != null) ...[const SizedBox(height: 24), action!],
             ],
-            if (action != null) ...[const SizedBox(height: 24), action!],
-          ],
+          ),
         ),
       ),
     );

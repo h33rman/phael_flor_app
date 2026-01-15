@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../../core/constants/category_colors.dart';
 import '../../core/providers/providers.dart';
 import '../components/components.dart';
 
@@ -18,21 +17,48 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  String? _selectedCategory;
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Add scroll listener for pagination
+    if (widget.scrollController != null) {
+      widget.scrollController!.addListener(_onScroll);
+    }
+  }
+
+  @override
   void dispose() {
+    if (widget.scrollController != null) {
+      widget.scrollController!.removeListener(_onScroll);
+    }
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (widget.scrollController != null) {
+      final maxScroll = widget.scrollController!.position.maxScrollExtent;
+      final currentScroll = widget.scrollController!.offset;
+      // Load more when scrolled to 90% of the content
+      if (currentScroll >= (maxScroll * 0.9)) {
+        ref.read(filteredProductsProvider.notifier).loadMore();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final productsAsync = ref.watch(productsProvider);
+    // Use the paginated provider
+    final paginatedState = ref.watch(filteredProductsProvider);
+    final products = paginatedState.products;
+    final isLoading = paginatedState.isLoading;
     final brandsAsync = ref.watch(brandsProvider);
     final isOnlineAsync = ref.watch(isOnlineProvider);
+    final favoriteIdsAsync = ref.watch(favoriteIdsProvider);
+    final favoriteIds = favoriteIdsAsync.asData?.value ?? [];
 
     // Create a map of brand ID to brand name for quick lookup
     final brandMap = brandsAsync.maybeWhen(
@@ -57,62 +83,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
 
             // Categories Section
-            SliverToBoxAdapter(
-              child: _buildCategoriesSection(context, colorScheme),
-            ),
+            const SliverToBoxAdapter(child: CategorySelector()),
 
             // Popular Products Section
             SliverToBoxAdapter(
               child: _buildSectionHeader(
                 context,
-                'Produits populaires',
+                'home.popular'.tr(),
                 colorScheme,
               ),
             ),
 
-            // Products Grid
-            productsAsync.when(
-              data: (products) {
-                var filtered = products;
-                if (_selectedCategory != null) {
-                  filtered = filtered
-                      .where((p) => p.category == _selectedCategory)
-                      .toList();
-                }
-
-                if (filtered.isEmpty) {
-                  return SliverFillRemaining(child: EmptyState.noResults());
-                }
-
-                return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.68,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                        ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final product = filtered[index];
-                      return ProductCard(
-                        product: product,
-                        brandName: brandMap[product.brandId],
-                        onTap: () => context.go('/product/${product.id}'),
-                        onFavoriteToggle: () {
-                          // TODO: Toggle favorite
-                        },
-                      );
-                    }, childCount: filtered.length),
+            // Products Grid State Handling
+            if (products.isEmpty && isLoading)
+              // Initial Loading
+              const SliverFillRemaining(child: NatureLoader())
+            else if (products.isEmpty && !isLoading)
+              // No Results
+              SliverFillRemaining(child: EmptyState.noResults())
+            else
+              // Product List
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.68,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
                   ),
-                );
-              },
-              loading: () => const SliverFillRemaining(child: NatureLoader()),
-              error: (e, _) => SliverFillRemaining(
-                child: Center(child: Text('${'common.error'.tr()}: $e')),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final product = products[index];
+                    final isFavorite = favoriteIds.contains(product.id);
+                    return ProductCard(
+                      product: product,
+                      brandName: brandMap[product.brandId],
+                      isFavorite: isFavorite,
+                      onTap: () => context.push('/product/${product.id}'),
+                      onFavoriteToggle: () {
+                        ref
+                            .read(productRepositoryProvider)
+                            .toggleFavorite(product.id);
+                      },
+                    );
+                  }, childCount: products.length),
+                ),
               ),
-            ),
+
+            // Bottom Loading Indicator (for pagination)
+            if (products.isNotEmpty && isLoading)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
@@ -151,13 +185,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bonjour! 👋',
+                      'home.greeting'.tr(),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'Découvrez nos produits naturels',
+                      'home.subtitle'.tr(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -185,17 +219,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 error: (_, __) => const SizedBox.shrink(),
               ),
               const SizedBox(width: 8),
-              // Notification icon
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  LucideIcons.bell,
-                  size: 20,
-                  color: colorScheme.onSurfaceVariant,
+              // Favorites icon
+              InkWell(
+                onTap: () => context.push('/favorites'),
+                customBorder: const CircleBorder(),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    LucideIcons.heart,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
                 ),
               ),
             ],
@@ -211,25 +249,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: TextField(
               controller: _searchController,
+              onChanged: (value) {
+                // Update search query provider
+                ref.read(searchQueryProvider.notifier).state = value;
+              },
               decoration: InputDecoration(
-                hintText: 'Rechercher des produits...',
+                hintText: 'home.search_hint'.tr(),
                 hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
                 prefixIcon: Icon(
                   LucideIcons.search,
                   color: colorScheme.onSurfaceVariant,
                 ),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    LucideIcons.slidersHorizontal,
-                    size: 18,
-                    color: colorScheme.onPrimary,
-                  ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
+                        icon: Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(searchQueryProvider.notifier).state = '';
+                        },
+                      ),
+
+                    Builder(
+                      builder: (context) {
+                        final hasActiveFilters =
+                            ref
+                                .watch(activeFilterProvider)
+                                .brandIds
+                                .isNotEmpty ||
+                            ref.watch(activeFilterProvider).forms.isNotEmpty;
+
+                        return IconButton(
+                          icon: Icon(
+                            // Change icon to funnel when active to show "filtered" state
+                            hasActiveFilters
+                                ? LucideIcons.filter
+                                : LucideIcons.slidersHorizontal,
+                            size: 20,
+                            color: hasActiveFilters
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          onPressed: () {
+                            // Open Filter Modal
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: colorScheme.surface,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
+                              ),
+                              builder: (context) => const FilterModal(),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
@@ -259,7 +343,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bien-être naturel 🌿',
+                  'home.banner_title'.tr(),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
@@ -267,14 +351,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Découvrez notre sélection de produits bio pour votre santé.',
+                  'home.banner_subtitle'.tr(),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onPrimary.withValues(alpha: 0.9),
                   ),
                 ),
                 const SizedBox(height: 16),
                 FilledButton.tonal(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Navigate to Tips tab (Index 1)
+                    ref.read(navIndexProvider.notifier).state = 1;
+                  },
                   style: FilledButton.styleFrom(
                     backgroundColor: colorScheme.onPrimary,
                     foregroundColor: colorScheme.primary,
@@ -282,7 +369,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Explorer'),
+                  child: Text('home.banner_button'.tr()),
                 ),
               ],
             ),
@@ -306,115 +393,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildCategoriesSection(
-    BuildContext context,
-    ColorScheme colorScheme,
-  ) {
-    final categories = [
-      _CategoryItem(
-        key: null,
-        label: 'Tous',
-        icon: LucideIcons.layoutGrid,
-        color: colorScheme.primary,
-      ),
-      _CategoryItem(
-        key: 'spice',
-        label: 'Épices',
-        icon: LucideIcons.flame,
-        color: CategoryColors.spice,
-      ),
-      _CategoryItem(
-        key: 'essential_oil',
-        label: 'Huiles',
-        icon: LucideIcons.droplets,
-        color: CategoryColors.essentialOil,
-      ),
-      _CategoryItem(
-        key: 'herb',
-        label: 'Herbes',
-        icon: LucideIcons.leaf,
-        color: CategoryColors.herb,
-      ),
-      _CategoryItem(
-        key: 'body_care',
-        label: 'Soins',
-        icon: LucideIcons.sparkles,
-        color: CategoryColors.bodyCare,
-      ),
-      _CategoryItem(
-        key: 'infusion',
-        label: 'Infusions',
-        icon: LucideIcons.coffee,
-        color: CategoryColors.infusion,
-      ),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader(context, 'Catégories', colorScheme),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final cat = categories[index];
-              final isSelected = _selectedCategory == cat.key;
-
-              return GestureDetector(
-                onTap: () => setState(() => _selectedCategory = cat.key),
-                child: Container(
-                  width: 72,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? cat.color
-                              : cat.color.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: cat.color, width: 3)
-                              : null,
-                        ),
-                        child: Icon(
-                          cat.icon,
-                          size: 24,
-                          color: isSelected ? Colors.white : cat.color,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        cat.label,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSelected
-                              ? cat.color
-                              : colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSectionHeader(
     BuildContext context,
     String title,
@@ -434,7 +412,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           TextButton(
             onPressed: () {},
             child: Text(
-              'Voir tout',
+              'home.view_all'.tr(),
               style: TextStyle(color: colorScheme.primary),
             ),
           ),
@@ -442,18 +420,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-}
-
-class _CategoryItem {
-  final String? key;
-  final String label;
-  final IconData icon;
-  final Color color;
-
-  _CategoryItem({
-    required this.key,
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
 }

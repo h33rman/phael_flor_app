@@ -116,6 +116,32 @@ class ProductRepository {
     return _localDb.searchProducts(query);
   }
 
+  /// Paginated fetch with filtering
+  Future<List<db.Product>> getPaginatedProducts({
+    required int limit,
+    required int offset,
+    String? searchQuery,
+    List<String>? brandIds,
+    List<String>? forms,
+    String? category,
+  }) async {
+    // Note: Pagination is purely local for now for speed/simplicity.
+    // Syncing happens in background or on specific actions (like "pull to refresh").
+    if (offset == 0) {
+      // Opportunistic sync on first page load
+      _syncProducts(); // Fire and forget
+    }
+
+    return _localDb.getProductsPaginated(
+      limit: limit,
+      offset: offset,
+      searchQuery: searchQuery,
+      brandIds: brandIds,
+      forms: forms,
+      category: category,
+    );
+  }
+
   /// Convert Drift Product to model Product
   models.Product toProductModel(db.Product dbProduct) {
     return models.Product(
@@ -235,5 +261,25 @@ class ProductRepository {
       await _syncBrands();
       await _syncProducts();
     }
+  }
+  // ═══════════════════════════════════════════════════════════════
+  // FAVORITES
+  // ═══════════════════════════════════════════════════════════════
+
+  /// Watch favorite product IDs
+  Stream<List<String>> watchFavoriteIds() {
+    return _localDb.watchFavoriteProductIds();
+  }
+
+  /// Get favorite product IDs one-time
+  Future<List<String>> getFavoriteIds() {
+    return _localDb.getFavoriteIds().then((ids) {
+      return ids.whereType<String>().toList();
+    });
+  }
+
+  /// Toggle favorite status
+  Future<void> toggleFavorite(String productId) async {
+    await _localDb.toggleProductFavorite(productId);
   }
 }

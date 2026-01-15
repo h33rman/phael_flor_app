@@ -10,3 +10,4 @@ export 'tips_screen.dart';
 export 'stores_screen.dart';
 export 'profile_screen.dart';
 export 'product_detail_screen.dart';
+export 'article_detail_screen.dart';

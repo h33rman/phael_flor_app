@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../data/models/store.dart';
 import '../components/components.dart';
 
@@ -42,9 +43,9 @@ class StoresScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nos Boutiques')),
+      appBar: AppBar(title: Text('stores.title'.tr())),
       body: stores.isEmpty
-          ? EmptyState.noData(message: 'Aucune boutique disponible')
+          ? EmptyState.noData(message: 'stores.empty'.tr())
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: stores.length,

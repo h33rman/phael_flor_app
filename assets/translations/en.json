@@ -24,7 +24,22 @@
     "home": {
         "title": "Catalog",
         "all": "All",
-        "filter_by_brand": "Filter by brand"
+        "filter_by_brand": "Filter by brand",
+        "greeting": "Hello! 👋",
+        "subtitle": "Discover our natural products",
+        "banner_title": "Tips & Wellness 🌿",
+        "banner_subtitle": "Explore our articles and tips for your health.",
+        "banner_button": "Read Articles",
+        "search_hint": "Search products...",
+        "categories": "Categories",
+        "popular": "Popular Products",
+        "view_all": "View"
+    },
+    "favorites": {
+        "title": "Favorites",
+        "empty_title": "Your Garden is Empty",
+        "empty_subtitle": "Start planting seeds by adding products to your favorites.",
+        "start_exploring": "Explore Products"
     },
     "product_detail": {
         "physical": "Characteristics",
@@ -104,9 +119,47 @@
         "guest_desc": "Login for more features",
         "login": "Login"
     },
+    "stores": {
+        "title": "Our Stores",
+        "empty": "No stores available",
+        "phone": "Phone",
+        "email": "Email",
+        "directions": "Directions"
+    },
+    "product": {
+        "view_details": "View Details",
+        "add_to_cart": "Add to Cart",
+        "tabs": {
+            "characteristics": "Specs",
+            "about": "About",
+            "usage": "Usage"
+        },
+        "ingredients": "Ingredients",
+        "certifications": "Certifications"
+    },
     "common": {
         "error": "Error",
         "retry": "Retry",
         "view": "View"
+    },
+    "empty": {
+        "favorites_title": "No favorites",
+        "favorites_subtitle": "Tap ❤️ to add products",
+        "search_title": "No results",
+        "search_subtitle": "Try different keywords",
+        "no_data": "No information available"
+    },
+    "nav": {
+        "home": "Home",
+        "tips": "Tips",
+        "stores": "Stores",
+        "profile": "Profile"
+    },
+    "filter": {
+        "title": "Filters",
+        "reset": "Reset",
+        "apply": "Apply Filters",
+        "brands": "Brands",
+        "forms": "Product Forms"
     }
 }

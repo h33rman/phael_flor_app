@@ -39,76 +39,117 @@ class LanguageSelectorScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
 
               // Icon
-              Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      LucideIcons.languages,
-                      size: 44,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 500.ms)
-                  .scale(
-                    begin: const Offset(0.8, 0.8),
-                    end: const Offset(1, 1),
-                    duration: 500.ms,
-                  ),
+              Center(
+                child:
+                    Container(
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            LucideIcons.languages,
+                            size: 40,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
+                        )
+                        .animate()
+                        .fade(duration: 600.ms)
+                        .scale(curve: Curves.easeOutBack),
+              ),
 
               const SizedBox(height: 32),
 
-              // Title
               Text(
                 'choose_language'.tr(),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
                 ),
-              ).animate(delay: 200.ms).fadeIn(duration: 500.ms),
+                textAlign: TextAlign.center,
+              ).animate().fade(delay: 200.ms).slideY(begin: 0.2, end: 0),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              // Subtitle
               Text(
                 'language_subtitle'.tr(),
-                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
-              ).animate(delay: 300.ms).fadeIn(duration: 500.ms),
+                textAlign: TextAlign.center,
+              ).animate().fade(delay: 300.ms),
 
-              const SizedBox(height: 48),
+              const Spacer(),
 
-              // Language list
+              // Language Options
               ...languages.asMap().entries.map((entry) {
-                final index = entry.key;
                 final lang = entry.value;
                 final isSelected = currentLocale == lang.locale;
 
                 return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _LanguageTile(
-                        language: lang,
-                        isSelected: isSelected,
-                        onTap: () => _selectLanguage(context, lang.locale),
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Material(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: () => _selectLanguage(context, lang.locale),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 20,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  lang.flag,
+                                  style: const TextStyle(fontSize: 24),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    lang.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: isSelected
+                                              ? colorScheme.onPrimary
+                                              : colorScheme.onSurface,
+                                        ),
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(
+                                    LucideIcons.checkCircle2,
+                                    color: colorScheme.onPrimary,
+                                    size: 24,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     )
-                    .animate(delay: Duration(milliseconds: 400 + index * 100))
-                    .fadeIn()
-                    .slideX(begin: 0.1, end: 0);
+                    .animate(
+                      delay: Duration(milliseconds: 400 + entry.key * 100),
+                    )
+                    .fade()
+                    .slideX();
               }),
 
-              const Spacer(flex: 2),
+              const Spacer(),
             ],
           ),
         ),
@@ -129,81 +170,4 @@ class _LanguageOption {
     required this.name,
     required this.nativeName,
   });
-}
-
-class _LanguageTile extends StatelessWidget {
-  final _LanguageOption language;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LanguageTile({
-    required this.language,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Material(
-      color: isSelected
-          ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Flag
-              Text(language.flag, style: const TextStyle(fontSize: 32)),
-              const SizedBox(width: 16),
-
-              // Name
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      language.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isSelected
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      language.nativeName,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Checkmark
-              if (isSelected)
-                Icon(LucideIcons.check, color: colorScheme.primary, size: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -88,6 +89,17 @@ class _ProductDetailBody extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ),
+              leading: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: CircleAvatar(
+                  backgroundColor: colorScheme.surface.withValues(alpha: 0.8),
+                  child: IconButton(
+                    icon: const Icon(LucideIcons.arrowLeft, size: 20),
+                    color: colorScheme.onSurface,
+                    onPressed: () => context.pop(),
+                  ),
                 ),
               ),
               actions: [
@@ -248,7 +260,7 @@ class _CharacteristicsTab extends StatelessWidget {
         if (product.form != null) ...[
           _InfoCard(
             icon: LucideIcons.box,
-            title: 'Forme',
+            title: 'product.tabs.characteristics'.tr(), // Or form specific key
             content: product.form!,
           ),
           const SizedBox(height: 16),
@@ -355,7 +367,7 @@ class _AboutTab extends StatelessWidget {
       children: [
         if (bienfaits.isNotEmpty) ...[
           Text(
-            'Bienfaits',
+            'product.benefits'.tr(),
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -391,7 +403,7 @@ class _AboutTab extends StatelessWidget {
         if (tags.isNotEmpty) ...[
           const SizedBox(height: 24),
           Text(
-            'Tags',
+            'product.tags'.tr(),
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
