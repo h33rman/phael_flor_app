@@ -66,5 +66,47 @@
         "aromatherapy": "Aromathérapie",
         "cooking": "Cuisine",
         "cleaning": "Nettoyage"
+    },
+    "tips": {
+        "title": "Conseils & Blog",
+        "recent": "Récents",
+        "read_time": "min"
+    },
+    "theme": {
+        "title": "Choisir le thème",
+        "subtitle": "Personnalisez l'apparence de l'application",
+        "continue": "Continuer",
+        "light": "Clair",
+        "dark": "Sombre",
+        "system": "Système"
+    },
+    "profile": {
+        "title": "Mon Profil",
+        "settings": "Paramètres",
+        "favorites": "Mes Favoris",
+        "favorites_subtitle": "{count} produits",
+        "reviews": "Mes Avis",
+        "reviews_subtitle_auth": "Voir mes avis",
+        "reviews_subtitle_guest": "Connexion requise",
+        "history": "Historique",
+        "history_subtitle": "Produits consultés",
+        "language": "Langue",
+        "theme": "Thème",
+        "theme_auto": "Automatique",
+        "notifications": "Notifications",
+        "notifications_subtitle": "Gérer les alertes",
+        "about": "À propos",
+        "help": "Aide & FAQ",
+        "privacy": "Confidentialité",
+        "logout": "Déconnexion",
+        "welcome": "Bienvenue !",
+        "member_desc": "Membre Phael Flor",
+        "guest_desc": "Connectez-vous pour plus de fonctionnalités",
+        "login": "Connexion"
+    },
+    "common": {
+        "error": "Erreur",
+        "retry": "Réessayer",
+        "view": "Voir"
     }
 }

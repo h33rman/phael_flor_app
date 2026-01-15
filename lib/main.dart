@@ -4,8 +4,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'core/theme/theme.dart';
 import 'core/theme/util.dart';
+import 'core/router/app_router.dart';
+import 'core/providers/theme_provider.dart';
 import 'data/sources/remote/supabase_client.dart';
-import 'presentation/screens/screens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,15 +25,21 @@ Future<void> main() async {
   );
 }
 
-class PhaelFlorApp extends StatelessWidget {
+class PhaelFlorApp extends ConsumerWidget {
   const PhaelFlorApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     TextTheme textTheme = createTextTheme(context, "Work Sans", "Fraunces");
     MaterialTheme theme = MaterialTheme(textTheme);
 
-    return MaterialApp(
+    // Watch theme mode from provider
+    final themeMode = ref.watch(themeModeProvider);
+
+    // Get router from provider
+    final router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
       title: 'Phael Flor Catalog',
       debugShowCheckedModeBanner: false,
 
@@ -42,35 +49,9 @@ class PhaelFlorApp extends StatelessWidget {
 
       theme: theme.light(),
       darkTheme: theme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
 
-      initialRoute: '/',
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/':
-            return MaterialPageRoute(builder: (_) => const SplashScreen());
-          case '/onboarding':
-            return MaterialPageRoute(builder: (_) => const OnboardingScreen());
-          case '/language':
-            return MaterialPageRoute(
-              builder: (_) => const LanguageSelectorScreen(),
-            );
-          case '/home':
-            return MaterialPageRoute(builder: (_) => const MainNavigation());
-          case '/settings':
-            return MaterialPageRoute(builder: (_) => const MainNavigation());
-          case '/auth':
-            return MaterialPageRoute(builder: (_) => const MainNavigation());
-          default:
-            if (settings.name?.startsWith('/product/') ?? false) {
-              final productId = settings.name!.replaceFirst('/product/', '');
-              return MaterialPageRoute(
-                builder: (_) => ProductDetailScreen(productId: productId),
-              );
-            }
-            return MaterialPageRoute(builder: (_) => const MainNavigation());
-        }
-      },
+      routerConfig: router,
     );
   }
 }

@@ -66,5 +66,47 @@
         "aromatherapy": "Aromatherapy",
         "cooking": "Cooking",
         "cleaning": "Cleaning"
+    },
+    "tips": {
+        "title": "Tips & Blog",
+        "recent": "Recent",
+        "read_time": "min"
+    },
+    "theme": {
+        "title": "Choose Theme",
+        "subtitle": "Customize the app appearance",
+        "continue": "Continue",
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+    },
+    "profile": {
+        "title": "My Profile",
+        "settings": "Settings",
+        "favorites": "My Favorites",
+        "favorites_subtitle": "{count} products",
+        "reviews": "My Reviews",
+        "reviews_subtitle_auth": "View my reviews",
+        "reviews_subtitle_guest": "Login required",
+        "history": "History",
+        "history_subtitle": "Viewed products",
+        "language": "Language",
+        "theme": "Theme",
+        "theme_auto": "Automatic",
+        "notifications": "Notifications",
+        "notifications_subtitle": "Manage alerts",
+        "about": "About",
+        "help": "Help & FAQ",
+        "privacy": "Privacy Policy",
+        "logout": "Logout",
+        "welcome": "Welcome!",
+        "member_desc": "Phael Flor Member",
+        "guest_desc": "Login for more features",
+        "login": "Login"
+    },
+    "common": {
+        "error": "Error",
+        "retry": "Retry",
+        "view": "View"
     }
 }

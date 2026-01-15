@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'home_screen.dart';
-import 'favorites_screen.dart';
+import 'tips_screen.dart';
 import 'stores_screen.dart';
 import 'profile_screen.dart';
 
@@ -15,21 +15,43 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  final ScrollController _homeScrollController = ScrollController();
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    FavoritesScreen(),
-    StoresScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void dispose() {
+    _homeScrollController.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    if (_currentIndex == index && index == 0) {
+      // If tapping Home again, scroll to top
+      if (_homeScrollController.hasClients) {
+        _homeScrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeOutQuart,
+        );
+      }
+    } else {
+      setState(() => _currentIndex = index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      HomeScreen(scrollController: _homeScrollController),
+      const TipsScreen(), // Replaced Favorites
+      const StoresScreen(),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        onDestinationSelected: _onItemTapped,
         destinations: const [
           NavigationDestination(
             icon: Icon(LucideIcons.home),
@@ -37,9 +59,9 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Accueil',
           ),
           NavigationDestination(
-            icon: Icon(LucideIcons.heart),
-            selectedIcon: Icon(LucideIcons.heart),
-            label: 'Favoris',
+            icon: Icon(LucideIcons.lightbulb), // Icon for Tips
+            selectedIcon: Icon(LucideIcons.lightbulb),
+            label: 'Conseils', // Label for Tips
           ),
           NavigationDestination(
             icon: Icon(LucideIcons.store),

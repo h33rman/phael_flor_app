@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../core/constants/category_colors.dart';
 import '../../core/providers/providers.dart';
 import '../components/components.dart';
 
 /// Home screen with modern design inspired by plant apps
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  final ScrollController? scrollController;
+
+  const HomeScreen({super.key, this.scrollController});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -40,6 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: CustomScrollView(
+          controller: widget.scrollController,
           slivers: [
             // Header with search
             SliverToBoxAdapter(
@@ -94,9 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return ProductCard(
                         product: product,
                         brandName: brandMap[product.brandId],
-                        onTap: () => Navigator.of(
-                          context,
-                        ).pushNamed('/product/${product.id}'),
+                        onTap: () => context.go('/product/${product.id}'),
                         onFavoriteToggle: () {
                           // TODO: Toggle favorite
                         },
@@ -105,9 +108,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 );
               },
-              loading: () => const SliverLoadingShimmer(),
-              error: (e, _) =>
-                  SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
+              loading: () => const SliverFillRemaining(child: NatureLoader()),
+              error: (e, _) => SliverFillRemaining(
+                child: Center(child: Text('${'common.error'.tr()}: $e')),
+              ),
             ),
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),

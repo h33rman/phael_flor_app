@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
 
 /// Onboarding screen with swipeable pages
 class OnboardingScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.of(context).pushReplacementNamed('/language');
+      context.go('/home');
     }
   }
 
@@ -64,8 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pushReplacementNamed('/language'),
+                onPressed: () => context.go('/home'),
                 child: Text(
                   'skip'.tr(),
                   style: TextStyle(

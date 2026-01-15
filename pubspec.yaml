@@ -40,7 +40,10 @@ dependencies:
   # State Management
   flutter_riverpod: ^2.6.1
 
-  # Backend - Supabase (latest)
+  # Navigation
+  go_router: ^14.8.1
+
+  # Backend - Supabase
   supabase_flutter: ^2.12.0
 
   # Local Database - Drift (modern, full offline SQL)
@@ -57,9 +60,6 @@ dependencies:
 
   # Environment Variables
   flutter_dotenv: ^5.2.1
-
-  # Navigation
-  go_router: ^14.6.2
 
   # Typography
   google_fonts: ^6.2.1

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
 
 /// Splash screen with animated logo
 class SplashScreen extends StatefulWidget {
@@ -19,20 +20,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigateAfterDelay() async {
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+    // TODO: Restore this check for production
+    // final prefs = await SharedPreferences.getInstance();
+    // final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+    // if (hasSeenOnboarding) {
+    //   context.go('/home');
+    // } else {
+    //   context.go('/onboarding');
+    // }
 
-    if (!mounted) return;
-
-    if (hasSeenOnboarding) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/onboarding');
-    }
+    // For testing: always show language selector first
+    context.go('/language');
   }
 
   @override

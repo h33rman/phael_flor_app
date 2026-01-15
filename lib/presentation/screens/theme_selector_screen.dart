@@ -1,40 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../core/providers/theme_provider.dart';
 
-/// Language selection screen with list layout
-class LanguageSelectorScreen extends StatelessWidget {
-  const LanguageSelectorScreen({super.key});
-
-  Future<void> _selectLanguage(BuildContext context, Locale locale) async {
-    await context.setLocale(locale);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('selected_language', locale.languageCode);
-    if (context.mounted) context.go('/theme');
-  }
+/// Theme selector screen - part of onboarding
+class ThemeSelectorScreen extends ConsumerWidget {
+  const ThemeSelectorScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final currentLocale = context.locale;
-
-    final languages = [
-      _LanguageOption(
-        locale: const Locale('fr'),
-        flag: '🇫🇷',
-        name: 'Français',
-        nativeName: 'French',
-      ),
-      _LanguageOption(
-        locale: const Locale('en'),
-        flag: '🇬🇧',
-        name: 'English',
-        nativeName: 'Anglais',
-      ),
-    ];
+    final currentTheme = ref.watch(themeModeProvider);
+    final locale = context.locale.languageCode;
 
     return Scaffold(
       body: SafeArea(
@@ -53,7 +33,7 @@ class LanguageSelectorScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      LucideIcons.languages,
+                      LucideIcons.palette,
                       size: 44,
                       color: colorScheme.onPrimaryContainer,
                     ),
@@ -70,7 +50,7 @@ class LanguageSelectorScreen extends StatelessWidget {
 
               // Title
               Text(
-                'choose_language'.tr(),
+                'theme.title'.tr(),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -80,7 +60,7 @@ class LanguageSelectorScreen extends StatelessWidget {
 
               // Subtitle
               Text(
-                'language_subtitle'.tr(),
+                'theme.subtitle'.tr(),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -89,18 +69,23 @@ class LanguageSelectorScreen extends StatelessWidget {
 
               const SizedBox(height: 48),
 
-              // Language list
-              ...languages.asMap().entries.map((entry) {
+              // Theme options list
+              ...ThemeModeOption.options.asMap().entries.map((entry) {
                 final index = entry.key;
-                final lang = entry.value;
-                final isSelected = currentLocale == lang.locale;
+                final option = entry.value;
+                final isSelected = currentTheme == option.mode;
 
                 return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _LanguageTile(
-                        language: lang,
+                      child: _ThemeOptionTile(
+                        option: option,
                         isSelected: isSelected,
-                        onTap: () => _selectLanguage(context, lang.locale),
+                        locale: locale,
+                        onTap: () {
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(option.mode);
+                        },
                       ),
                     )
                     .animate(delay: Duration(milliseconds: 400 + index * 100))
@@ -108,7 +93,25 @@ class LanguageSelectorScreen extends StatelessWidget {
                     .slideX(begin: 0.1, end: 0);
               }),
 
-              const Spacer(flex: 2),
+              const Spacer(),
+
+              // Continue button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => context.go('/onboarding'),
+                  icon: const Icon(LucideIcons.arrowRight),
+                  label: Text('theme.continue'.tr()),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.2, end: 0),
+
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -117,34 +120,33 @@ class LanguageSelectorScreen extends StatelessWidget {
   }
 }
 
-class _LanguageOption {
-  final Locale locale;
-  final String flag;
-  final String name;
-  final String nativeName;
-
-  const _LanguageOption({
-    required this.locale,
-    required this.flag,
-    required this.name,
-    required this.nativeName,
-  });
-}
-
-class _LanguageTile extends StatelessWidget {
-  final _LanguageOption language;
+class _ThemeOptionTile extends StatelessWidget {
+  final ThemeModeOption option;
   final bool isSelected;
+  final String locale;
   final VoidCallback onTap;
 
-  const _LanguageTile({
-    required this.language,
+  const _ThemeOptionTile({
+    required this.option,
     required this.isSelected,
+    required this.locale,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    String getLocalizedLabel(ThemeMode mode) {
+      switch (mode) {
+        case ThemeMode.light:
+          return 'theme.light'.tr();
+        case ThemeMode.dark:
+          return 'theme.dark'.tr();
+        case ThemeMode.system:
+          return 'theme.system'.tr();
+      }
+    }
 
     return Material(
       color: isSelected
@@ -167,33 +169,35 @@ class _LanguageTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Flag
-              Text(language.flag, style: const TextStyle(fontSize: 32)),
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.surfaceContainerHighest,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  option.icon,
+                  size: 22,
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(width: 16),
 
-              // Name
+              // Label
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      language.name,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
-                        color: isSelected
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      language.nativeName,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  getLocalizedLabel(option.mode),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected
+                        ? colorScheme.onPrimaryContainer
+                        : colorScheme.onSurface,
+                  ),
                 ),
               ),
 

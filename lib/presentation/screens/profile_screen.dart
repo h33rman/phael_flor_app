@@ -16,7 +16,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Profil'),
+        title: Text('profile.title'.tr()),
         actions: [
           IconButton(
             icon: const Icon(LucideIcons.settings),
@@ -37,20 +37,24 @@ class ProfileScreen extends ConsumerWidget {
 
           MenuListTile(
             icon: LucideIcons.heart,
-            title: 'Mes Favoris',
-            subtitle: '0 produits',
+            title: 'profile.favorites'.tr(),
+            subtitle: 'profile.favorites_subtitle'.tr(
+              namedArgs: {'count': '0'},
+            ),
             onTap: () {},
           ),
           MenuListTile(
             icon: LucideIcons.star,
-            title: 'Mes Avis',
-            subtitle: isLoggedIn ? 'Voir mes avis' : 'Connexion requise',
+            title: 'profile.reviews'.tr(),
+            subtitle: isLoggedIn
+                ? 'profile.reviews_subtitle_auth'.tr()
+                : 'profile.reviews_subtitle_guest'.tr(),
             onTap: () {},
           ),
           MenuListTile(
             icon: LucideIcons.history,
-            title: 'Historique',
-            subtitle: 'Produits consultés',
+            title: 'profile.history'.tr(),
+            subtitle: 'profile.history_subtitle'.tr(),
             onTap: () {},
           ),
 
@@ -60,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
 
           MenuListTile(
             icon: LucideIcons.languages,
-            title: 'Langue',
+            title: 'profile.language'.tr(),
             subtitle: context.locale.languageCode == 'fr'
                 ? 'Français'
                 : 'English',
@@ -69,15 +73,16 @@ class ProfileScreen extends ConsumerWidget {
           ),
           MenuListTile(
             icon: LucideIcons.moon,
-            title: 'Thème',
-            subtitle: 'Automatique',
+            title: 'profile.theme'.tr(),
+            subtitle: 'profile.theme_auto'
+                .tr(), // This should ideally reflect current theme
             trailing: const Icon(LucideIcons.chevronRight),
             onTap: () {},
           ),
           MenuListTile(
             icon: LucideIcons.bell,
-            title: 'Notifications',
-            subtitle: 'Gérer les alertes',
+            title: 'profile.notifications'.tr(),
+            subtitle: 'profile.notifications_subtitle'.tr(),
             trailing: const Icon(LucideIcons.chevronRight),
             onTap: () {},
           ),
@@ -86,15 +91,19 @@ class ProfileScreen extends ConsumerWidget {
           const Divider(),
           const SizedBox(height: 16),
 
-          MenuListTile(icon: LucideIcons.info, title: 'À propos', onTap: () {}),
+          MenuListTile(
+            icon: LucideIcons.info,
+            title: 'profile.about'.tr(),
+            onTap: () {},
+          ),
           MenuListTile(
             icon: LucideIcons.helpCircle,
-            title: 'Aide & FAQ',
+            title: 'profile.help'.tr(),
             onTap: () {},
           ),
           MenuListTile(
             icon: LucideIcons.shield,
-            title: 'Confidentialité',
+            title: 'profile.privacy'.tr(),
             onTap: () {},
           ),
 
@@ -103,7 +112,7 @@ class ProfileScreen extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: () {},
               icon: const Icon(LucideIcons.logOut),
-              label: const Text('Déconnexion'),
+              label: Text('profile.logout'.tr()),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colorScheme.error,
                 side: BorderSide(color: colorScheme.error),
@@ -127,7 +136,7 @@ class ProfileScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Choisir la langue'),
+        title: Text('choose_language'.tr()),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -198,7 +207,7 @@ class _ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isLoggedIn ? userName : 'Bienvenue !',
+                  isLoggedIn ? userName : 'profile.welcome'.tr(),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -207,8 +216,8 @@ class _ProfileHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   isLoggedIn
-                      ? 'Membre Phael Flor'
-                      : 'Connectez-vous pour plus de fonctionnalités',
+                      ? 'profile.member_desc'.tr()
+                      : 'profile.guest_desc'.tr(),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onPrimaryContainer.withValues(
                       alpha: 0.8,
@@ -219,7 +228,10 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           if (!isLoggedIn)
-            FilledButton(onPressed: onSignIn, child: const Text('Connexion')),
+            FilledButton(
+              onPressed: onSignIn,
+              child: Text('profile.login'.tr()),
+            ),
         ],
       ),
     );
