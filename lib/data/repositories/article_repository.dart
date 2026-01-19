@@ -1,19 +1,41 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/article.dart' as model;
 import '../sources/local/app_database.dart' as db;
 import 'package:drift/drift.dart';
 import '../sources/remote/supabase_client.dart';
+import '../../core/utils/connectivity_helper.dart';
 
 /// Repository for managing articles (Tips & Blog)
 class ArticleRepository {
   final db.AppDatabase _localDb;
+  final SupabaseDataSource _remoteDb;
+  final ConnectivityHelper _connectivity;
 
-  ArticleRepository({required db.AppDatabase localDb}) : _localDb = localDb;
+  ArticleRepository({
+    required db.AppDatabase localDb,
+    required SupabaseDataSource remoteDb,
+    required ConnectivityHelper connectivity,
+  }) : _localDb = localDb,
+       _remoteDb = remoteDb,
+       _connectivity = connectivity;
 
   /// Get all articles
   Future<List<model.Article>> getAllArticles() async {
-    final dbArticles = await _localDb.getAllArticles();
-    return dbArticles.map((e) => _toModel(e)).toList();
+    // ONLINE MODE: Fetch from Supabase
+    if (await _connectivity.hasConnection()) {
+      try {
+        final remoteData = await _remoteDb.fetchArticles();
+        return remoteData
+            .map((json) => _toModelFromDb(_mapJsonToDbArticle(json)))
+            .toList();
+      } catch (e) {
+        debugPrint('Online article fetch failed: $e');
+        return [];
+      }
+    }
+    // OFFLINE MODE: Returns EMPTY (journal is online-only)
+    return [];
   }
 
   /// Get article by ID
@@ -26,18 +48,31 @@ class ArticleRepository {
   /// Sync articles from Remote (Supabase) to Local (Drift)
   Future<void> syncArticles() async {
     try {
-      // 0. Clear Local Cache (Full Mirror Strategy)
-      await _localDb.deleteAllArticles();
+      // 0. Sync Labels first (FK dependency)
+      try {
+        final remoteLabels = await SupabaseDataSource()
+            .fetchArticleCategoryLabels();
+        final labelCompanions = remoteLabels.map((json) {
+          final labelMap = json['label'] as Map;
+          return db.ArticleCategoryLabelsCompanion(
+            key: Value(json['key']),
+            label: Value(jsonEncode(labelMap)),
+          );
+        }).toList();
+        await _localDb.insertArticleCategoryLabels(labelCompanions);
+      } catch (e) {
+        debugPrint('Label sync warning: $e');
+      }
 
       // 1. Fetch from Remote
       final remoteData = await SupabaseDataSource().fetchArticles();
 
       // 2. Convert to Drift Companions
       final companions = remoteData.map((json) {
-        // Handle localized JSON fields safely
+        // Handle localized JSON fields safely - just store the generic Map as JSON string
         final titleMap = json['title'] is Map
             ? json['title']
-            : {'fr': json['title']}; // fallback
+            : {'fr': json['title']};
         final excerptMap = json['excerpt'] is Map
             ? json['excerpt']
             : {'fr': json['excerpt']};
@@ -47,12 +82,9 @@ class ArticleRepository {
 
         return db.ArticlesCompanion(
           id: Value(json['id']),
-          titleFr: Value(titleMap['fr'] ?? titleMap['en'] ?? ''),
-          titleEn: Value(titleMap['en']),
-          excerptFr: Value(excerptMap['fr']),
-          excerptEn: Value(excerptMap['en']),
-          contentFr: Value(contentMap['fr']),
-          contentEn: Value(contentMap['en']),
+          title: Value(jsonEncode(titleMap)),
+          excerpt: Value(excerptMap != null ? jsonEncode(excerptMap) : null),
+          content: Value(contentMap != null ? jsonEncode(contentMap) : null),
           category: Value(json['category'] ?? 'article'),
           tags: Value(jsonEncode(json['tags'] ?? [])),
           featureImageUrl: Value(json['feature_image_url']),
@@ -67,61 +99,38 @@ class ArticleRepository {
       // 3. Upsert into Local DB
       if (companions.isNotEmpty) {
         await _localDb.insertArticles(companions);
-        print('Synced ${companions.length} articles from Supabase.');
+        debugPrint('Synced ${companions.length} articles from Supabase.');
       }
     } catch (e) {
-      print('Article sync failed: $e');
-      // On failure, we just show what is in local DB (persistence)
+      debugPrint('Article sync failed: $e.');
     }
   }
 
   /// Convert DB Article to Model Article
   model.Article _toModel(db.Article entity) {
-    // Determine language from environment/locale context?
-    // Ideally repository returns localized data, but here we return full object
-    // and let UI decide. However, our Model is flat.
-    // Let's assume we map the "Fr" content by default or map all
-    // Wait, the Model should probably handle the localization selection
-    // or store both. Let's update Model to be simpler:
-    // Actually, looking at ProductRepository, we map manually.
-    // For simplicity, let's map "fr" to the main fields for now,
-    // or better, let's map based on basic logic.
+    // Parse JSON specific fields
+    final titleMap = jsonDecode(entity.title) as Map;
+    final excerptMap = entity.excerpt != null
+        ? jsonDecode(entity.excerpt!) as Map
+        : null;
+    final contentMap = entity.content != null
+        ? jsonDecode(entity.content!) as Map
+        : null;
 
-    // Note: In real app, we might pass locale to repository.
-    // Beause we stored both in DB (titleFr, titleEn),
-    // let's pass a preferred language or just map all properties if the model supports it.
+    // Based on previous code: title: entity.titleFr.
+    // If I change DB to store JSON, I must parse it.
 
-    // Changing approach: The Model `Article` I defined earlier has `title`, `content` (singular).
-    // This implies the Repository should ideally localize.
-    // OR the Model should have `titleFr`, `titleEn`.
-    // My previous Model definition had `title` (singular).
-    // I will modify the mapping to default to FR for now, or use a "localized" getter.
-    // Actually, to make it dynamic, I should update the Model to hold both OR
-    // pass the locale to `getAllArticles`.
-    // Let's pass the locale or just map FR for default and let UI handle it?
-    // No, cleaner is to have `title` be a Map or the Repo select it.
-
-    // Let's auto-select "fr" as primary for this simple implementation,
-    // but usually we want to support switching.
-    // Checking `Product` model: it has `Map<String, String> name`.
-    // I should probably update `Article` model to match that pattern if I want full localization support.
-    // BUT, for speed, I defined Article quite simply.
-
-    // Let's use the simple approach: The Model I wrote has `title`, `content`.
-    // I will Map `titleFr` -> `title`. This is a limitation but fits the "simple" request.
-    // Wait, I can't easily switch language then.
-    // Better: Update Model to have Map like Product.
-    // But I already wrote `Article` model.
-
-    // Okay, I'll stick to mapping `titleFr` to `title` for now to get it working,
-    // AND I will add `titleEn` etc to the map if I can, or just keep it simple.
-    // Actually, let's just populate based on what's available.
+    // Model expects String, providing FR or EN fallback.
 
     return model.Article(
       id: entity.id,
-      title: entity.titleFr, // Defaulting to FR base
-      excerpt: entity.excerptFr,
-      content: entity.contentFr,
+      title: (titleMap['fr'] ?? titleMap['en'] ?? '') as String,
+      excerpt:
+          (excerptMap != null ? (excerptMap['fr'] ?? excerptMap['en']) : null)
+              as String?,
+      content:
+          (contentMap != null ? (contentMap['fr'] ?? contentMap['en']) : null)
+              as String?,
       category: entity.category,
       tags: entity.tags != null
           ? List<String>.from(jsonDecode(entity.tags!) as List)
@@ -133,6 +142,9 @@ class ArticleRepository {
           : [],
     );
   }
+
+  // ...
+
   // ═══════════════════════════════════════════════════════════════
   // FAVORITES
   // ═══════════════════════════════════════════════════════════════
@@ -144,6 +156,82 @@ class ArticleRepository {
 
   /// Toggle favorite status
   Future<void> toggleFavorite(String articleId) async {
+    // Ensure article exists in local DB
+    final existing = await _localDb.getArticleById(articleId);
+    if (existing == null) {
+      if (await _connectivity.hasConnection()) {
+        final remoteList = await _remoteDb.fetchArticles();
+        final json = remoteList.firstWhere(
+          (e) => e['id'] == articleId,
+          orElse: () => {},
+        );
+        if (json.isNotEmpty) {
+          final companion = _mapJsonToCompanion(json);
+          await _localDb.insertArticles([companion]);
+        }
+      }
+    }
     await _localDb.toggleArticleFavorite(articleId);
+  }
+
+  // Helper: JSON -> DB Article (for direct mapping not companion)
+  // Used in getAllArticles if online?
+  // No, getAllArticles uses _toModelFromDb(_mapJsonToDbArticle(json)) IF ONLINE?
+  // _mapJsonToDbArticle logic needs update too.
+
+  db.Article _mapJsonToDbArticle(Map<String, dynamic> json) {
+    final titleMap = json['title'] is Map
+        ? json['title']
+        : {'fr': json['title']};
+    final excerptMap = json['excerpt'] is Map
+        ? json['excerpt']
+        : {'fr': json['excerpt']};
+    final contentMap = json['content'] is Map
+        ? json['content']
+        : {'fr': json['content']};
+
+    return db.Article(
+      id: json['id'],
+      title: jsonEncode(titleMap),
+      excerpt: excerptMap != null ? jsonEncode(excerptMap) : null,
+      content: contentMap != null ? jsonEncode(contentMap) : null,
+      category: json['category'] ?? 'article',
+      tags: jsonEncode(json['tags'] ?? []),
+      featureImageUrl: json['feature_image_url'],
+      relatedProductIds: jsonEncode(json['related_product_ids'] ?? []),
+      isActive: json['is_active'] ?? true,
+      publishedAt: DateTime.tryParse(json['published_at'] ?? ''),
+      readTime: null, // readTime is in table def? Yes.
+    );
+  }
+
+  // Helper: JSON -> Companion
+  db.ArticlesCompanion _mapJsonToCompanion(Map<String, dynamic> json) {
+    final titleMap = json['title'] is Map
+        ? json['title']
+        : {'fr': json['title']};
+    final excerptMap = json['excerpt'] is Map
+        ? json['excerpt']
+        : {'fr': json['excerpt']};
+    final contentMap = json['content'] is Map
+        ? json['content']
+        : {'fr': json['content']};
+
+    return db.ArticlesCompanion(
+      id: Value(json['id']),
+      title: Value(jsonEncode(titleMap)),
+      excerpt: Value(excerptMap != null ? jsonEncode(excerptMap) : null),
+      content: Value(contentMap != null ? jsonEncode(contentMap) : null),
+      category: Value(json['category'] ?? 'article'),
+      tags: Value(jsonEncode(json['tags'] ?? [])),
+      featureImageUrl: Value(json['feature_image_url']),
+      relatedProductIds: Value(jsonEncode(json['related_product_ids'] ?? [])),
+      isActive: Value(json['is_active'] ?? true),
+      publishedAt: Value(DateTime.tryParse(json['published_at'] ?? '')),
+    );
+  }
+
+  model.Article _toModelFromDb(db.Article entity) {
+    return _toModel(entity);
   }
 }

@@ -4,9 +4,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/providers/providers.dart';
 import 'home_screen.dart';
-import 'tips_screen.dart';
+import 'journal_screen.dart';
 import 'stores_screen.dart';
 import 'profile_screen.dart';
+import 'favorites_screen.dart';
 
 class MainNavigation extends ConsumerWidget {
   const MainNavigation({super.key});
@@ -59,10 +60,30 @@ class _MainNavigationState extends ConsumerState<_MainNavigationContent> {
 
     final screens = [
       HomeScreen(scrollController: _homeScrollController),
-      const TipsScreen(),
+      const JournalScreen(),
       const StoresScreen(),
       const ProfileScreen(),
     ];
+
+    ref.listen<AsyncValue<bool>>(isOnlineProvider, (previous, next) {
+      final isOnline = next.value ?? true;
+      final wasOnline = previous?.value ?? true;
+
+      if (!isOnline && wasOnline) {
+        // Navigate to Favorites when going offline
+        // Use a slight delay to ensure context is ready or avoid build collisions
+        Future.microtask(() {
+          if (context.mounted) {
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const FavoritesScreen()));
+          }
+        });
+      }
+    });
+
+    // Handle initial offline state
+    // Remove the blocking return
 
     return Scaffold(
       body: IndexedStack(index: currentIndex, children: screens),
@@ -76,9 +97,9 @@ class _MainNavigationState extends ConsumerState<_MainNavigationContent> {
             label: 'nav.home'.tr(),
           ),
           NavigationDestination(
-            icon: const Icon(LucideIcons.lightbulb),
-            selectedIcon: const Icon(LucideIcons.lightbulb),
-            label: 'nav.tips'.tr(),
+            icon: const Icon(LucideIcons.bookOpen),
+            selectedIcon: const Icon(LucideIcons.bookOpen),
+            label: 'nav.journal'.tr(),
           ),
           NavigationDestination(
             icon: const Icon(LucideIcons.store),

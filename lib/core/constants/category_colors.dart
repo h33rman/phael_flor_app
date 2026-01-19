@@ -11,7 +11,17 @@ class CategoryColors {
   static const Color infusion = Color(0xFF00838F);
   static const Color supplement = Color(0xFF5D4037);
 
-  static Color forCategory(String? category) {
+  static Color forCategory(
+    String? category, {
+    Map<String, Color>? dynamicColors,
+  }) {
+    if (category == null) return herb;
+
+    // Check dynamic colors first
+    if (dynamicColors != null && dynamicColors.containsKey(category)) {
+      return dynamicColors[category]!;
+    }
+
     switch (category) {
       case 'spice':
         return spice;
@@ -25,6 +35,12 @@ class CategoryColors {
         return infusion;
       case 'supplement':
         return supplement;
+      case 'vegetable_oil':
+        return const Color(0xFFFF8F00); // Amber 800
+      case 'soap':
+        return const Color(0xFF8D6E63); // Brown 400
+      case 'shampoo':
+        return const Color(0xFF0288D1); // Light Blue 700
       default:
         return herb;
     }

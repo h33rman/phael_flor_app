@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -11,90 +12,91 @@ class CategorySelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final labelsAsync = ref.watch(categoryLabelsProvider);
 
-    final categories = [
-      _CategoryItem(
-        key: null,
-        label: 'home.all'.tr(),
-        icon: LucideIcons.layoutGrid,
-        color: colorScheme.primary,
-      ),
-      _CategoryItem(
-        key: 'spice',
-        label: 'categories.spice'.tr(),
-        icon: LucideIcons.flame,
-        color: CategoryColors.spice,
-      ),
-      _CategoryItem(
-        key: 'essential_oil',
-        label: 'categories.essential_oil'.tr(),
-        icon: LucideIcons.droplets,
-        color: CategoryColors.essentialOil,
-      ),
-      _CategoryItem(
-        key: 'herb',
-        label: 'categories.herb'.tr(),
-        icon: LucideIcons.leaf,
-        color: CategoryColors.herb,
-      ),
-      _CategoryItem(
-        key: 'body_care',
-        label: 'categories.body_care'.tr(),
-        icon: LucideIcons.sparkles,
-        color: CategoryColors.bodyCare,
-      ),
-      _CategoryItem(
-        key: 'infusion',
-        label: 'categories.infusion'.tr(),
-        icon: LucideIcons.coffee,
-        color: CategoryColors.infusion,
-      ),
-    ];
+    return labelsAsync.when(
+      data: (labels) {
+        final categories = [
+          _CategoryItem(
+            key: null,
+            label: 'home.all'.tr(),
+            icon: LucideIcons.layoutGrid,
+            color: colorScheme.primary,
+          ),
+          ...labels.map((l) {
+            // Determine icon based on key or fallback
+            IconData icon = LucideIcons.tag;
+            if (l.key == 'spice') icon = LucideIcons.flame;
+            if (l.key == 'essential_oil') icon = LucideIcons.droplets;
+            if (l.key == 'herb') icon = LucideIcons.leaf;
+            if (l.key == 'body_care') icon = LucideIcons.sparkles;
+            if (l.key == 'infusion') icon = LucideIcons.coffee;
+            if (l.key == 'vegetable_oil') icon = LucideIcons.droplet;
+            if (l.key == 'cleaning') icon = LucideIcons.sprayCan;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'home.categories'.tr(),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            // Use localized label from JSON
+            final isFr = context.locale.languageCode == 'fr';
+            Map<String, dynamic> labelMap = {};
+            try {
+              labelMap = jsonDecode(l.label) as Map<String, dynamic>;
+            } catch (_) {
+              labelMap = {'fr': l.key};
+            }
+
+            final labelText = isFr
+                ? (labelMap['fr'] ?? l.key)
+                : (labelMap['en'] ?? labelMap['fr'] ?? l.key);
+
+            return _CategoryItem(
+              key: l.key,
+              label: labelText,
+              icon: icon,
+              color: CategoryColors.forCategory(l.key),
+            );
+          }),
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'home.categories'.tr(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'home.view_all'.tr(),
-                  style: TextStyle(color: colorScheme.primary),
-                ),
+            ),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final cat = categories[index];
+                  return _buildCategoryItem(
+                    context,
+                    ref,
+                    cat.key,
+                    cat.label,
+                    cat.icon,
+                    cat.color,
+                  );
+                },
               ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: categories.length,
-            itemBuilder: (context, index) {
-              final cat = categories[index];
-              return _buildCategoryItem(
-                context,
-                ref,
-                cat.key,
-                cat.label,
-                cat.icon,
-                cat.color,
-              );
-            },
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 

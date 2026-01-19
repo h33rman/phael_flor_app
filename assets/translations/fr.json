@@ -1,4 +1,9 @@
 {
+    "offline": {
+        "title": "Vous êtes hors ligne",
+        "subtitle": "Connectez-vous pour explorer tout le contenu.",
+        "go_to_favorites": "Aller aux Favoris"
+    },
     "app_name": "Phael Flor Catalog",
     "brands": "Marques",
     "products": "Produits",
@@ -39,7 +44,9 @@
         "title": "Favoris",
         "empty_title": "Votre Jardin est Vide",
         "empty_subtitle": "Commencez à planter des graines en ajoutant des produits à vos favoris.",
-        "start_exploring": "Explorer les Produits"
+        "start_exploring": "Explorer les Produits",
+        "products": "Produits",
+        "journal": "Journal"
     },
     "product_detail": {
         "physical": "Caractéristiques",
@@ -67,7 +74,8 @@
         "gel": "Gel",
         "oil": "Huile",
         "paste": "Pâte",
-        "whole": "Entier"
+        "whole": "Entier",
+        "bean": "Gousse"
     },
     "categories": {
         "essential_oil": "Huile Essentielle",
@@ -80,12 +88,14 @@
         "supplement": "Complément Alimentaire",
         "aromatherapy": "Aromathérapie",
         "cooking": "Cuisine",
-        "cleaning": "Nettoyage"
+        "cleaning": "Nettoyage",
+        "vegetable_oil": "Huile Végétale",
+        "misc": "Général"
     },
-    "tips": {
-        "title": "Conseils & Blog",
-        "recent": "Récents",
-        "read_time": "min"
+    "journal": {
+        "title": "Journal",
+        "recent": "Articles Récents",
+        "empty": "Aucun article trouvé."
     },
     "theme": {
         "title": "Choisir le thème",
@@ -151,7 +161,7 @@
     },
     "nav": {
         "home": "Accueil",
-        "tips": "Conseils",
+        "journal": "Journal",
         "stores": "Boutiques",
         "profile": "Profil"
     },

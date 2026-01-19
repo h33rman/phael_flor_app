@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import '../../core/providers/providers.dart';
 import '../../data/models/store.dart';
 import '../components/components.dart';
 
@@ -10,7 +13,63 @@ class StoresScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
     // Sample stores - TODO: Replace with stores provider
+    final isOnlineAsync = ref.watch(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
+
+    if (!isOnline) {
+      return Scaffold(
+        appBar: AppBar(title: Text('stores.title'.tr())),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    LucideIcons.wifiOff,
+                    size: 48,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'offline.title'.tr(),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'offline.subtitle'.tr(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () {
+                    context.push('/favorites');
+                  },
+                  icon: const Icon(LucideIcons.heart),
+                  label: Text('offline.go_to_favorites'.tr()),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final stores = [
       Store(
         id: '1',

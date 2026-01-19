@@ -1,4 +1,9 @@
 {
+    "offline": {
+        "title": "You are offline",
+        "subtitle": "Go online to explore all content.",
+        "go_to_favorites": "Go to Favorites"
+    },
     "app_name": "Phael Flor Catalog",
     "brands": "Brands",
     "products": "Products",
@@ -39,7 +44,9 @@
         "title": "Favorites",
         "empty_title": "Your Garden is Empty",
         "empty_subtitle": "Start planting seeds by adding products to your favorites.",
-        "start_exploring": "Explore Products"
+        "start_exploring": "Explore Products",
+        "products": "Products",
+        "journal": "Journal"
     },
     "product_detail": {
         "physical": "Characteristics",
@@ -67,7 +74,8 @@
         "gel": "Gel",
         "oil": "Oil",
         "paste": "Paste",
-        "whole": "Whole"
+        "whole": "Whole",
+        "bean": "Pod / Bean"
     },
     "categories": {
         "essential_oil": "Essential Oil",
@@ -80,12 +88,14 @@
         "supplement": "Food Supplement",
         "aromatherapy": "Aromatherapy",
         "cooking": "Cooking",
-        "cleaning": "Cleaning"
+        "cleaning": "Cleaning",
+        "vegetable_oil": "Vegetable Oil",
+        "misc": "General"
     },
-    "tips": {
-        "title": "Tips & Blog",
-        "recent": "Recent",
-        "read_time": "min"
+    "journal": {
+        "title": "Journal",
+        "recent": "Recent Articles",
+        "empty": "No articles found."
     },
     "theme": {
         "title": "Choose Theme",
@@ -151,7 +161,7 @@
     },
     "nav": {
         "home": "Home",
-        "tips": "Tips",
+        "journal": "Journal",
         "stores": "Stores",
         "profile": "Profile"
     },

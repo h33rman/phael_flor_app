@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+
 import '../../core/constants/category_colors.dart';
 import '../../core/providers/providers.dart';
 import '../../data/sources/local/app_database.dart' as db;
@@ -35,23 +36,72 @@ class ProductDetailScreen extends ConsumerWidget {
   }
 }
 
-class _ProductDetailBody extends StatelessWidget {
+class _ProductDetailBody extends ConsumerStatefulWidget {
   final db.Product product;
 
   const _ProductDetailBody({required this.product});
 
+  @override
+  ConsumerState<_ProductDetailBody> createState() => _ProductDetailBodyState();
+}
+
+class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
+  int _currentImageIndex = 0;
+
   String _getProductName(BuildContext context) {
     final locale = context.locale.languageCode;
-    return locale == 'en' && product.nameEn != null
-        ? product.nameEn!
-        : product.nameFr;
+    return locale == 'en' && widget.product.nameEn != null
+        ? widget.product.nameEn!
+        : widget.product.nameFr;
   }
 
-  Color get _categoryColor => CategoryColors.forCategory(product.category);
+  String? _getExcerpt(BuildContext context) {
+    final locale = context.locale.languageCode;
+    return locale == 'en' ? widget.product.excerptEn : widget.product.excerptFr;
+  }
+
+  String? _getExpertNote(BuildContext context) {
+    final locale = context.locale.languageCode;
+    return locale == 'en'
+        ? widget.product.expertNoteEn
+        : widget.product.expertNoteFr;
+  }
+
+  List<String> _getGalleryUrls() {
+    if (widget.product.galleryUrls == null) return [];
+    try {
+      return List<String>.from(jsonDecode(widget.product.galleryUrls!));
+    } catch (_) {
+      return [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final favoriteIdsAsync = ref.watch(favoriteIdsProvider);
+    final isFavorite =
+        favoriteIdsAsync.asData?.value.contains(widget.product.id) ?? false;
+
+    final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
+    // Use dynamic category color if available, else standard fallback logic
+    final categoryColor = CategoryColors.forCategory(
+      widget.product.category,
+      dynamicColors: dynamicColors,
+    );
+
+    // For the detail screen, we might want to use the category color more prominently
+    // or stick to the existing primary color design.
+    // The current code uses colorScheme.primary for general accents.
+    // Use dynamic category color for harmony
+    final primaryColor = categoryColor;
+    final containerColor = categoryColor.withValues(alpha: 0.2);
+
+    final gallery = _getGalleryUrls();
+    // If gallery is empty but we have a main image, treat it as a gallery of 1
+    final images = gallery.isNotEmpty
+        ? gallery
+        : (widget.product.imageUrl != null ? [widget.product.imageUrl!] : []);
 
     return Scaffold(
       body: DefaultTabController(
@@ -59,27 +109,81 @@ class _ProductDetailBody extends StatelessWidget {
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverAppBar(
-              expandedHeight: 280,
+              expandedHeight: 320, // Taller for gallery
               pinned: true,
-              backgroundColor: _categoryColor,
+              backgroundColor: containerColor,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (product.imageUrl != null)
-                      CachedNetworkImage(
-                        imageUrl: product.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => Container(
-                          color: _categoryColor.withValues(alpha: 0.3),
-                        ),
+                    if (images.isNotEmpty)
+                      PageView.builder(
+                        itemCount: images.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return CachedNetworkImage(
+                            imageUrl: images[index],
+                            fit: BoxFit.cover,
+                            errorWidget: (_, __, ___) => Container(
+                              color: containerColor.withValues(alpha: 0.3),
+                            ),
+                          );
+                        },
                       )
                     else
-                      Container(color: _categoryColor.withValues(alpha: 0.3)),
+                      Container(color: containerColor.withValues(alpha: 0.3)),
+
+                    // Gradient overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.6),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
+                      ),
+                    ),
+
+                    // Page Indicators
+                    if (images.length > 1)
+                      Positioned(
+                        bottom: 32, // Above the rounded bottom container
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: images.asMap().entries.map((entry) {
+                            return Container(
+                              width: 8.0,
+                              height: 8.0,
+                              margin: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                                horizontal: 4.0,
+                              ),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _currentImageIndex == entry.key
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.4),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+
                     Container(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        height: 60,
+                        height: 24, // Reduced height overlap
                         decoration: BoxDecoration(
                           color: colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
@@ -103,14 +207,41 @@ class _ProductDetailBody extends StatelessWidget {
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: const Icon(LucideIcons.heart),
-                  onPressed: () {},
+                CircleAvatar(
+                  backgroundColor: isFavorite
+                      ? colorScheme.primaryContainer
+                      : colorScheme.surface.withValues(alpha: 0.8),
+                  child: IconButton(
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : LucideIcons.heart,
+                      size: 20,
+                      color: isFavorite
+                          ? colorScheme.primary
+                          : colorScheme.onSurface,
+                    ),
+                    onPressed: () {
+                      ref
+                          .read(productRepositoryProvider)
+                          .toggleFavorite(widget.product.id);
+                    },
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(LucideIcons.share2),
-                  onPressed: () {},
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: colorScheme.surface.withValues(alpha: 0.8),
+                  child: IconButton(
+                    icon: const Icon(LucideIcons.share2, size: 20),
+                    color: colorScheme.onSurface,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Share functionality coming soon!'),
+                        ),
+                      );
+                    },
+                  ),
                 ),
+                const SizedBox(width: 16),
               ],
             ),
 
@@ -120,20 +251,21 @@ class _ProductDetailBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (product.category != null)
+                    if (widget.product.category != null)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: _categoryColor.withValues(alpha: 0.1),
+                          color: containerColor.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'categories.${product.category}'.tr(),
+                          'categories.${widget.product.category ?? 'misc'}'
+                              .tr(),
                           style: TextStyle(
-                            color: _categoryColor,
+                            color: colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -145,17 +277,28 @@ class _ProductDetailBody extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    if (product.scientificName != null) ...[
+                    // Excerpt
+                    if (_getExcerpt(context) != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _getExcerpt(context)!,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                    if (widget.product.scientificName != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        product.scientificName!,
+                        widget.product.scientificName!,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontStyle: FontStyle.italic,
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
-                    if (product.weightVolume != null) ...[
+                    if (widget.product.weightVolume != null) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -166,12 +309,20 @@ class _ProductDetailBody extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            product.weightVolume!,
+                            widget.product.weightVolume!,
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                    // Expert Note
+                    if (_getExpertNote(context) != null) ...[
+                      const SizedBox(height: 16),
+                      _ExpertNoteCard(
+                        note: _getExpertNote(context)!,
+                        color: categoryColor,
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -184,9 +335,9 @@ class _ProductDetailBody extends StatelessWidget {
               pinned: true,
               delegate: _TabBarDelegate(
                 TabBar(
-                  labelColor: _categoryColor,
+                  labelColor: primaryColor,
                   unselectedLabelColor: colorScheme.onSurfaceVariant,
-                  indicatorColor: _categoryColor,
+                  indicatorColor: primaryColor,
                   tabs: [
                     Tab(text: 'product.tabs.characteristics'.tr()),
                     Tab(text: 'product.tabs.about'.tr()),
@@ -200,11 +351,11 @@ class _ProductDetailBody extends StatelessWidget {
           body: TabBarView(
             children: [
               _CharacteristicsTab(
-                product: product,
-                categoryColor: _categoryColor,
+                product: widget.product,
+                categoryColor: primaryColor,
               ),
-              _AboutTab(product: product),
-              _UsageTab(product: product, categoryColor: _categoryColor),
+              _AboutTab(product: widget.product),
+              _UsageTab(product: widget.product, categoryColor: primaryColor),
             ],
           ),
         ),
@@ -228,7 +379,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _TabBarDelegate old) => false;
 }
 
-class _CharacteristicsTab extends StatelessWidget {
+class _CharacteristicsTab extends ConsumerWidget {
   final db.Product product;
   final Color categoryColor;
   const _CharacteristicsTab({
@@ -246,13 +397,19 @@ class _CharacteristicsTab extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final ingredients = _parse(product.ingredients);
-    final certs = _parse(product.certifications);
 
-    if (ingredients.isEmpty && certs.isEmpty && product.form == null)
+    // Fetch certifications for this product
+    final certsAsync = ref.watch(productCertificationsProvider(product.id));
+    final certs = certsAsync.asData?.value ?? [];
+
+    if (ingredients.isEmpty && certs.isEmpty && product.form == null) {
       return EmptyState.noData();
+    }
+
+    final locale = context.locale.languageCode;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -260,7 +417,7 @@ class _CharacteristicsTab extends StatelessWidget {
         if (product.form != null) ...[
           _InfoCard(
             icon: LucideIcons.box,
-            title: 'product.tabs.characteristics'.tr(), // Or form specific key
+            title: 'product.tabs.characteristics'.tr(),
             content: product.form!,
           ),
           const SizedBox(height: 16),
@@ -300,29 +457,57 @@ class _CharacteristicsTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: certs
-                .map(
-                  (c) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
+            spacing: 12,
+            runSpacing: 12,
+            children: certs.map((c) {
+              final name = locale == 'en' && c.nameEn != null
+                  ? c.nameEn!
+                  : c.nameFr;
+
+              if (c.logoUrl != null && c.logoUrl!.isNotEmpty) {
+                return Tooltip(
+                  message: name,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white,
+                      border: Border.all(color: colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      c,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onPrimaryContainer,
+                    child: CachedNetworkImage(
+                      imageUrl: c.logoUrl!,
+                      fit: BoxFit.contain,
+                      errorWidget: (_, __, ___) => Center(
+                        child: Text(
+                          name[0],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
-                )
-                .toList(),
+                );
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ],
@@ -330,37 +515,35 @@ class _CharacteristicsTab extends StatelessWidget {
   }
 }
 
-class _AboutTab extends StatelessWidget {
+class _AboutTab extends ConsumerWidget {
   final db.Product product;
   const _AboutTab({required this.product});
 
   List<String> _getBienfaits(BuildContext context) {
     final locale = context.locale.languageCode;
     try {
-      if (locale == 'en' && product.bienfaitsEn != null)
+      if (locale == 'en' && product.bienfaitsEn != null) {
         return List<String>.from(jsonDecode(product.bienfaitsEn!));
-      if (product.bienfaitsFr != null)
+      }
+      if (product.bienfaitsFr != null) {
         return List<String>.from(jsonDecode(product.bienfaitsFr!));
+      }
     } catch (_) {}
     return [];
   }
 
-  List<String> _parseTags() {
-    if (product.tags == null) return [];
-    try {
-      return List<String>.from(jsonDecode(product.tags!));
-    } catch (_) {
-      return [];
-    }
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final bienfaits = _getBienfaits(context);
-    final tags = _parseTags();
+
+    // Fetch Tags
+    final tagsAsync = ref.watch(productTagsProvider(product.id));
+    final tags = tagsAsync.asData?.value ?? [];
 
     if (bienfaits.isEmpty && tags.isEmpty) return EmptyState.noData();
+
+    final locale = context.locale.languageCode;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -412,19 +595,21 @@ class _AboutTab extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: tags
-                .map(
-                  (t) => Chip(
-                    label: Text(t),
-                    backgroundColor: colorScheme.secondaryContainer,
-                    labelStyle: TextStyle(
-                      color: colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                )
-                .toList(),
+            children: tags.map((t) {
+              final label = locale == 'en' && t.labelEn != null
+                  ? t.labelEn!
+                  : t.labelFr;
+              return Chip(
+                label: Text(label),
+                backgroundColor: colorScheme.secondaryContainer,
+                labelStyle: TextStyle(color: colorScheme.onSecondaryContainer),
+              );
+            }).toList(),
           ),
         ],
+        // Similar Products
+        const SizedBox(height: 32),
+        _SimilarProductsSection(productId: product.id),
       ],
     );
   }
@@ -568,6 +753,104 @@ class _InfoCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ExpertNoteCard extends StatelessWidget {
+  final String note;
+  final Color color;
+  const _ExpertNoteCard({required this.note, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(LucideIcons.quote, size: 20, color: color),
+              const SizedBox(width: 8),
+              Text(
+                "Le mot de l'expert", // TODO: Localize
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Playfair Display', // Serif font for elegance
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            note,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontStyle: FontStyle.italic,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SimilarProductsSection extends ConsumerWidget {
+  final String productId;
+  const _SimilarProductsSection({required this.productId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final similarAsync = ref.watch(similarProductsProvider(productId));
+
+    return similarAsync.when(
+      data: (products) {
+        if (products.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Vous aimerez aussi", // TODO: Localize
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 280, // Height for compact cards
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: products.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return SizedBox(
+                    width: 160,
+                    child: ProductCardCompact(
+                      product: product,
+                      onTap: () {
+                        // Push new detail screen
+                        context.push('/product/${product.id}');
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

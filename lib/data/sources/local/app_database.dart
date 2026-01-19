@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 part 'app_database.g.dart';
 
@@ -29,9 +28,16 @@ class Products extends Table {
   // Physical Characteristics
   TextColumn get nameFr => text()();
   TextColumn get nameEn => text().nullable()();
+  // Short description/Excerpt
+  TextColumn get excerptFr => text().nullable()();
+  TextColumn get excerptEn => text().nullable()();
+
   TextColumn get scientificName => text().nullable()();
   TextColumn get form => text().nullable()(); // powder, liquid, leaf, etc.
-  TextColumn get category => text().nullable()(); // spice, essential_oil, etc.
+  TextColumn get category => text().nullable().references(
+    CategoryLabels,
+    #key,
+  )(); // spice, essential_oil, etc.
   TextColumn get weightVolume => text().nullable()();
   TextColumn get ingredients => text().nullable()(); // JSON array as string
   TextColumn get certifications => text().nullable()(); // JSON array as string
@@ -44,9 +50,11 @@ class Products extends Table {
   TextColumn get tags => text().nullable()(); // JSON array as string
   TextColumn get bienfaitsFr => text().nullable()(); // JSON array as string
   TextColumn get bienfaitsEn => text().nullable()(); // JSON array as string
+  TextColumn get usages => text().nullable()(); // JSON array as string
 
-  // Usage (stored as JSON)
-  TextColumn get usages => text().nullable()(); // JSON array of usage sections
+  // Expert Note
+  TextColumn get expertNoteFr => text().nullable()();
+  TextColumn get expertNoteEn => text().nullable()();
 
   // Meta
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
@@ -58,81 +66,119 @@ class Products extends Table {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TABLE: Form Labels (for localization)
+// TABLE: Metadata Labels
 // ═══════════════════════════════════════════════════════════════
 class FormLabels extends Table {
   TextColumn get key => text()();
-  TextColumn get labelFr => text()();
-  TextColumn get labelEn => text()();
+  TextColumn get label => text()(); // JSON
 
   @override
   Set<Column> get primaryKey => {key};
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TABLE: Category Labels (for localization)
-// ═══════════════════════════════════════════════════════════════
 class CategoryLabels extends Table {
   TextColumn get key => text()();
-  TextColumn get labelFr => text()();
-  TextColumn get labelEn => text()();
+  TextColumn get label => text()(); // JSON
+  TextColumn get color => text().nullable()(); // Added in v11
+
+  @override
+  Set<Column> get primaryKey => {key};
+}
+
+class ArticleCategoryLabels extends Table {
+  TextColumn get key => text()();
+  TextColumn get label => text()(); // JSON
 
   @override
   Set<Column> get primaryKey => {key};
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TABLE: Favorites
+// TABLE: Certifications & Tags
 // ═══════════════════════════════════════════════════════════════
-class Favorites extends Table {
-  TextColumn get id => text().clientDefault(() => const Uuid().v4())();
-  TextColumn get productId => text().nullable().references(Products, #id)();
-  TextColumn get articleId => text().nullable().references(Articles, #id)();
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+class Certifications extends Table {
+  TextColumn get id => text()();
+  TextColumn get nameFr => text()();
+  TextColumn get nameEn => text().nullable()();
+  TextColumn get logoUrl => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
+class Tags extends Table {
+  TextColumn get id => text()();
+  TextColumn get labelFr => text()();
+  TextColumn get labelEn => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ProductTags extends Table {
+  TextColumn get productId => text().references(Products, #id)();
+  TextColumn get tagId => text().references(Tags, #id)();
+
+  @override
+  Set<Column> get primaryKey => {productId, tagId};
+}
+
+class ProductCertifications extends Table {
+  TextColumn get productId => text().references(Products, #id)();
+  TextColumn get certificationId => text().references(Certifications, #id)();
+
+  @override
+  Set<Column> get primaryKey => {productId, certificationId};
+}
+
 // ═══════════════════════════════════════════════════════════════
-// TABLE: Articles (Tips & Blog)
+// TABLE: User Data
+// ═══════════════════════════════════════════════════════════════
+class Favorites extends Table {
+  TextColumn get productId => text().nullable().references(Products, #id)();
+  TextColumn get articleId => text().nullable().references(Articles, #id)();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABLE: Articles
 // ═══════════════════════════════════════════════════════════════
 class Articles extends Table {
   TextColumn get id => text()();
-
-  // Content
-  TextColumn get titleFr => text()();
-  TextColumn get titleEn => text().nullable()();
-  TextColumn get excerptFr => text().nullable()();
-  TextColumn get excerptEn => text().nullable()();
-  TextColumn get contentFr => text().nullable()(); // HTML or Markdown
-  TextColumn get contentEn => text().nullable()(); // HTML or Markdown
-
-  // Metadata
-  TextColumn get category => text()(); // 'tip', 'article', 'promotion'
-  TextColumn get tags => text().nullable()(); // JSON List<String>
+  TextColumn get title => text()(); // JSON
+  TextColumn get excerpt => text().nullable()(); // JSON
+  TextColumn get content => text().nullable()(); // JSON / HTML
+  TextColumn get category => text().references(ArticleCategoryLabels, #key)();
+  IntColumn get readTime => integer().nullable()();
   TextColumn get featureImageUrl => text().nullable()();
-  TextColumn get relatedProductIds => text().nullable()(); // JSON List<String>
-
-  IntColumn get readTime => integer().nullable()(); // minutes
-  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get publishedAt => dateTime().nullable()();
+  TextColumn get tags => text().nullable()(); // JSON
+  TextColumn get relatedProductIds => text().nullable()(); // JSON
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DATABASE
-// ═══════════════════════════════════════════════════════════════
 @DriftDatabase(
-  tables: [Brands, Products, FormLabels, CategoryLabels, Favorites, Articles],
+  tables: [
+    Brands,
+    Products,
+    FormLabels,
+    CategoryLabels,
+    ArticleCategoryLabels,
+    Favorites,
+    Articles,
+    Certifications,
+    ProductCertifications,
+    Tags,
+    ProductTags,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 12;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'phael_flor_db');
@@ -146,18 +192,48 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from < 2) {
-          // Version 2: Added Favorites table
           await m.createTable(favorites);
         }
         if (from < 3) {
-          // Version 3: Added Articles table
           await m.createTable(articles);
         }
         if (from < 4) {
-          // Version 4: Recreating Favorites table for Articles support (PK changed)
-          // Note: This drops existing favorites. In a prod app, we'd migrate data.
           await m.deleteTable(favorites.actualTableName);
           await m.createTable(favorites);
+        }
+        if (from < 5) {
+          try {
+            await m.addColumn(products, products.excerptFr);
+          } catch (e) {
+            // ignore: avoid_print
+            print('Migration warning: excerptFr likely exists: $e');
+          }
+          try {
+            await m.addColumn(products, products.excerptEn);
+          } catch (e) {
+            // ignore: avoid_print
+            print('Migration warning: excerptEn likely exists: $e');
+          }
+        }
+        if (from < 6) {
+          await m.createTable(certifications);
+        }
+        if (from < 7) {
+          await m.createTable(tags);
+        }
+        if (from < 9) {
+          await m.createTable(productCertifications);
+          await m.createTable(productTags);
+        }
+        if (from < 10) {
+          await m.createTable(articleCategoryLabels);
+        }
+        if (from < 11) {
+          await m.addColumn(categoryLabels, categoryLabels.color);
+        }
+        if (from < 12) {
+          await m.addColumn(products, products.expertNoteFr);
+          await m.addColumn(products, products.expertNoteEn);
         }
       },
     );
@@ -346,6 +422,60 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ═══════════════════════════════════════════════════════════════
+  // TAGS & CERTIFICATIONS QUERIES
+  // ═══════════════════════════════════════════════════════════════
+  Future<List<Tag>> getAllTags() => select(tags).get();
+
+  Future<void> insertTags(List<TagsCompanion> list) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(tags, list);
+    });
+  }
+
+  Future<List<Certification>> getAllCertifications() =>
+      select(certifications).get();
+
+  Future<void> insertCertifications(List<CertificationsCompanion> list) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(certifications, list);
+    });
+  }
+
+  // Relations
+  Future<List<Tag>> getTagsForProduct(String productId) {
+    return (select(tags).join([
+          innerJoin(productTags, productTags.tagId.equalsExp(tags.id)),
+        ])..where(productTags.productId.equals(productId)))
+        .map((row) => row.readTable(tags))
+        .get();
+  }
+
+  Future<List<Certification>> getCertificationsForProduct(String productId) {
+    return (select(certifications).join([
+          innerJoin(
+            productCertifications,
+            productCertifications.certificationId.equalsExp(certifications.id),
+          ),
+        ])..where(productCertifications.productId.equals(productId)))
+        .map((row) => row.readTable(certifications))
+        .get();
+  }
+
+  Future<void> insertProductTags(List<ProductTagsCompanion> list) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(productTags, list);
+    });
+  }
+
+  Future<void> insertProductCertifications(
+    List<ProductCertificationsCompanion> list,
+  ) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(productCertifications, list);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // LABELS QUERIES
   // ═══════════════════════════════════════════════════════════════
   Future<List<FormLabel>> getAllFormLabels() => select(formLabels).get();
@@ -363,6 +493,14 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     await batch((batch) {
       batch.insertAllOnConflictUpdate(categoryLabels, labels);
+    });
+  }
+
+  Future<void> insertArticleCategoryLabels(
+    List<ArticleCategoryLabelsCompanion> labels,
+  ) async {
+    await batch((batch) {
+      batch.insertAllOnConflictUpdate(articleCategoryLabels, labels);
     });
   }
 

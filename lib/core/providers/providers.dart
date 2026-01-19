@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phael_flor_app/data/sources/local/app_database.dart' as db;
 import 'package:phael_flor_app/data/sources/remote/supabase_client.dart';
@@ -76,13 +77,16 @@ final productRepositoryProvider = Provider<ProductRepository>((ref) {
 
 /// Article repository
 final articleRepositoryProvider = Provider<ArticleRepository>((ref) {
-  return ArticleRepository(localDb: ref.read(appDatabaseProvider));
+  return ArticleRepository(
+    localDb: ref.read(appDatabaseProvider),
+    remoteDb: ref.read(supabaseDataSourceProvider),
+    connectivity: ref.read(connectivityProvider),
+  );
 });
 
 /// All articles
 final articlesProvider = FutureProvider<List<model.Article>>((ref) async {
   final repo = ref.read(articleRepositoryProvider);
-  await repo.syncArticles(); // Sync from cloud
   return repo.getAllArticles();
 });
 
@@ -114,6 +118,37 @@ final productsByBrandProvider = FutureProvider.family<List<db.Product>, String>(
     return repo.getProductsByBrand(brandId);
   },
 );
+
+/// All tags
+final tagsProvider = FutureProvider<List<db.Tag>>((ref) async {
+  final repo = ref.read(productRepositoryProvider);
+  return repo.getAllTags();
+});
+
+/// All certifications
+/// All certifications
+final certificationsProvider = FutureProvider<List<db.Certification>>((
+  ref,
+) async {
+  final repo = ref.read(productRepositoryProvider);
+  return repo.getAllCertifications();
+});
+
+/// Tags for a specific product
+final productTagsProvider = FutureProvider.family<List<db.Tag>, String>((
+  ref,
+  id,
+) async {
+  final repo = ref.read(productRepositoryProvider);
+  return repo.getTagsForProduct(id);
+});
+
+/// Certifications for a specific product
+final productCertificationsProvider =
+    FutureProvider.family<List<db.Certification>, String>((ref, id) async {
+      final repo = ref.read(productRepositoryProvider);
+      return repo.getCertificationsForProduct(id);
+    });
 
 /// Product search
 final searchQueryProvider = StateProvider<String>((ref) => '');
@@ -218,7 +253,7 @@ class PaginatedProductsNotifier extends StateNotifier<PaginatedState> {
     } catch (e) {
       state = state.copyWith(isLoading: false);
       // Handle error gracefully (maybe show snackbar in UI via listener)
-      print('Pagination error: $e');
+      debugPrint('Pagination error: $e');
     }
   }
 }
@@ -228,6 +263,14 @@ final filteredProductsProvider =
     StateNotifierProvider<PaginatedProductsNotifier, PaginatedState>((ref) {
       return PaginatedProductsNotifier(ref);
     });
+
+/// Category Labels
+final categoryLabelsProvider = FutureProvider<List<db.CategoryLabel>>((
+  ref,
+) async {
+  final repo = ref.read(productRepositoryProvider);
+  return repo.getCategoryLabels();
+});
 
 /// Connectivity status
 final isOnlineProvider = StreamProvider<bool>((ref) {
@@ -258,3 +301,54 @@ final favoriteProductsProvider = FutureProvider<List<db.Product>>((ref) async {
   final allProducts = await ref.watch(productsProvider.future);
   return allProducts.where((p) => favoriteIds.contains(p.id)).toList();
 });
+
+/// Favorite Articles (Resolved Objects)
+final favoriteArticlesProvider = FutureProvider<List<model.Article>>((
+  ref,
+) async {
+  final favoriteIds = await ref.watch(favoriteArticleIdsProvider.future);
+  if (favoriteIds.isEmpty) return [];
+
+  final allArticles = await ref.watch(articlesProvider.future);
+  return allArticles.where((a) => favoriteIds.contains(a.id)).toList();
+});
+
+/// Provider for dynamic category colors
+final categoryColorsProvider = StreamProvider<Map<String, Color>>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.select(db.categoryLabels).watch().map((labels) {
+    final Map<String, Color> colors = {};
+    for (var label in labels) {
+      if (label.color != null && label.color!.startsWith('#')) {
+        try {
+          final hex = label.color!.replaceAll('#', '');
+          colors[label.key] = Color(int.parse('0xFF$hex'));
+        } catch (e) {
+          debugPrint('Error parsing color for ${label.key}: $e');
+        }
+      }
+    }
+    return colors;
+  });
+});
+
+/// Similar Products Provider (Clientside filtering)
+final similarProductsProvider = FutureProvider.family<List<db.Product>, String>(
+  (ref, productId) async {
+    final allProducts = await ref.watch(productsProvider.future);
+    final currentProduct = allProducts.firstWhere(
+      (p) => p.id == productId,
+      orElse: () => allProducts.first,
+    );
+
+    if (currentProduct.category == null) return [];
+
+    // Filter by same category, exclude current, limit to 5
+    return allProducts
+        .where(
+          (p) => p.category == currentProduct.category && p.id != productId,
+        )
+        .take(5)
+        .toList();
+  },
+);

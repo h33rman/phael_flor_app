@@ -11,7 +11,8 @@ enum ProductForm {
   gel,
   oil,
   paste,
-  whole;
+  whole,
+  bean;
 
   String get labelKey => name;
 
@@ -33,7 +34,8 @@ enum ProductCategory {
   supplement,
   aromatherapy,
   cooking,
-  cleaning;
+  cleaning,
+  vegetableOil;
 
   String get labelKey {
     switch (this) {
@@ -41,6 +43,8 @@ enum ProductCategory {
         return 'essential_oil';
       case ProductCategory.bodyCare:
         return 'body_care';
+      case ProductCategory.vegetableOil:
+        return 'vegetable_oil';
       default:
         return name;
     }

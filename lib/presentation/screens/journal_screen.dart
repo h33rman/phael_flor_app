@@ -4,17 +4,20 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/article.dart';
 
 /// Screen displaying daily tips and blog posts (Journal)
-class TipsScreen extends ConsumerWidget {
-  const TipsScreen({super.key});
+class JournalScreen extends ConsumerWidget {
+  const JournalScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final articlesAsync = ref.watch(articlesProvider);
+    final isOnlineAsync = ref.watch(isOnlineProvider);
+    final isOnline = isOnlineAsync.value ?? true;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -23,7 +26,7 @@ class TipsScreen extends ConsumerWidget {
           // Header
           SliverAppBar.large(
             title: Text(
-              'tips.title'.tr(),
+              'journal.title'.tr(),
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -34,90 +37,142 @@ class TipsScreen extends ConsumerWidget {
             scrolledUnderElevation: 0,
           ),
 
-          articlesAsync.when(
-            data: (articles) {
-              if (articles.isEmpty) {
-                return SliverToBoxAdapter(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Text(
-                        'No articles found.',
-                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+          if (!isOnline)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          LucideIcons.wifiOff,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'offline.title'.tr(),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'offline.subtitle'.tr(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () {
+                          context.push('/favorites');
+                        },
+                        icon: const Icon(LucideIcons.heart),
+                        label: Text('offline.go_to_favorites'.tr()),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            articlesAsync.when(
+              data: (articles) {
+                if (articles.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Text(
+                          'journal.empty'.tr(),
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              final featured = articles.first;
-              final others = articles.skip(1).toList();
+                final featured = articles.first;
+                final others = articles.skip(1).toList();
 
-              return SliverMainAxisGroup(
-                slivers: [
-                  // Featured Tip (First item)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: GestureDetector(
-                        onTap: () => context.push('/article/${featured.id}'),
-                        child: _FeaturedTipCard(article: featured)
-                            .animate()
-                            .fadeIn(duration: 500.ms)
-                            .slideY(begin: 0.1, end: 0),
-                      ),
-                    ),
-                  ),
-
-                  if (others.isNotEmpty)
+                return SliverMainAxisGroup(
+                  slivers: [
+                    // Featured Tip (First item)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                        child: Text(
-                          'tips.recent'.tr(),
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: GestureDetector(
+                          onTap: () => context.push('/article/${featured.id}'),
+                          child: _FeaturedTipCard(article: featured)
+                              .animate()
+                              .fadeIn(duration: 500.ms)
+                              .slideY(begin: 0.1, end: 0),
                         ),
                       ),
                     ),
 
-                  // List of other tips
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final article = others[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: GestureDetector(
-                            onTap: () => context.push('/article/${article.id}'),
-                            child: _TipListTile(article: article)
-                                .animate(
-                                  delay: Duration(milliseconds: 100 * index),
-                                )
-                                .fadeIn()
-                                .slideX(begin: 0.1, end: 0),
+                    if (others.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+                          child: Text(
+                            'journal.recent'.tr(),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                        );
-                      }, childCount: others.length),
+                        ),
+                      ),
+
+                    // List of other tips
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final article = others[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: GestureDetector(
+                              onTap: () =>
+                                  context.push('/article/${article.id}'),
+                              child: _TipListTile(article: article)
+                                  .animate(
+                                    delay: Duration(milliseconds: 100 * index),
+                                  )
+                                  .fadeIn()
+                                  .slideX(begin: 0.1, end: 0),
+                            ),
+                          );
+                        }, childCount: others.length),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (err, stack) => SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('Error: $err'),
+                  ],
+                );
+              },
+              loading: () => const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (err, stack) => SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Error: $err'),
+                ),
               ),
             ),
-          ),
 
           const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         ],

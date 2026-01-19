@@ -107,4 +107,32 @@ class SupabaseDataSource {
         .order('published_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
+
+  Future<List<Map<String, dynamic>>> fetchArticleCategoryLabels() async {
+    final response = await _client.from('article_category_labels').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // TAGS & CERTIFICATIONS
+  // ═══════════════════════════════════════════════════════════════
+  Future<List<Map<String, dynamic>>> fetchTags() async {
+    final response = await _client.from('tags').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchCertifications() async {
+    final response = await _client.from('certifications').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchProductTags() async {
+    final response = await _client.from('product_tags').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchProductCertifications() async {
+    final response = await _client.from('product_certifications').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

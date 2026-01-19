@@ -77,76 +77,132 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: _buildHeader(context, colorScheme, isOnlineAsync),
             ),
 
-            // Featured Banner
-            SliverToBoxAdapter(
-              child: _buildFeaturedBanner(context, colorScheme),
-            ),
+            if (isOnlineAsync.value ?? true) ...[
+              // ONLINE CONTENT
 
-            // Categories Section
-            const SliverToBoxAdapter(child: CategorySelector()),
-
-            // Popular Products Section
-            SliverToBoxAdapter(
-              child: _buildSectionHeader(
-                context,
-                'home.popular'.tr(),
-                colorScheme,
+              // Featured Banner
+              SliverToBoxAdapter(
+                child: _buildFeaturedBanner(context, colorScheme),
               ),
-            ),
 
-            // Products Grid State Handling
-            if (products.isEmpty && isLoading)
-              // Initial Loading
-              const SliverFillRemaining(child: NatureLoader())
-            else if (products.isEmpty && !isLoading)
-              // No Results
-              SliverFillRemaining(child: EmptyState.noResults())
-            else
-              // Product List
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.68,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final product = products[index];
-                    final isFavorite = favoriteIds.contains(product.id);
-                    return ProductCard(
-                      product: product,
-                      brandName: brandMap[product.brandId],
-                      isFavorite: isFavorite,
-                      onTap: () => context.push('/product/${product.id}'),
-                      onFavoriteToggle: () {
-                        ref
-                            .read(productRepositoryProvider)
-                            .toggleFavorite(product.id);
-                      },
-                    );
-                  }, childCount: products.length),
+              // Categories Section
+              const SliverToBoxAdapter(child: CategorySelector()),
+
+              // Popular Products Section
+              SliverToBoxAdapter(
+                child: _buildSectionHeader(
+                  context,
+                  'home.popular'.tr(),
+                  colorScheme,
                 ),
               ),
 
-            // Bottom Loading Indicator (for pagination)
-            if (products.isNotEmpty && isLoading)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
+              // Products Grid State Handling
+              if (products.isEmpty && isLoading)
+                // Initial Loading
+                const SliverFillRemaining(child: NatureLoader())
+              else if (products.isEmpty && !isLoading)
+                // No Results
+                SliverFillRemaining(child: EmptyState.noResults())
+              else
+                // Product List
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverGrid(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.68,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                        ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final product = products[index];
+                      final isFavorite = favoriteIds.contains(product.id);
+                      return ProductCard(
+                        product: product,
+                        brandName: brandMap[product.brandId],
+                        isFavorite: isFavorite,
+                        onTap: () => context.push('/product/${product.id}'),
+                        onFavoriteToggle: () {
+                          ref
+                              .read(productRepositoryProvider)
+                              .toggleFavorite(product.id);
+                        },
+                      );
+                    }, childCount: products.length),
+                  ),
+                ),
+
+              // Bottom Loading Indicator (for pagination)
+              if (products.isNotEmpty && isLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ),
                   ),
                 ),
+            ] else ...[
+              // OFFLINE CONTENT
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            LucideIcons.wifiOff,
+                            size: 48,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'You are offline.',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Go online to explore all our products.',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        FilledButton.icon(
+                          onPressed: () {
+                            // Retry / Check connection
+                            // Or Navigate to Favorites
+                            context.push('/favorites');
+                          },
+                          icon: const Icon(LucideIcons.heart),
+                          label: const Text('Go to Favorites'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
+            ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/category_colors.dart';
+import '../../core/providers/providers.dart';
 import '../../data/sources/local/app_database.dart' as db;
 
 /// Elegant product card with rounded image, favorite button, and view action
-class ProductCard extends StatelessWidget {
+class ProductCard extends ConsumerWidget {
   final db.Product product;
   final String? brandName; // Pass brand name directly
   final VoidCallback? onTap;
@@ -29,11 +31,18 @@ class ProductCard extends StatelessWidget {
         : product.nameFr;
   }
 
-  Color get _categoryColor => CategoryColors.forCategory(product.category);
+  Color _getCategoryColor(WidgetRef ref) {
+    final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
+    return CategoryColors.forCategory(
+      product.category,
+      dynamicColors: dynamicColors,
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final categoryColor = _getCategoryColor(ref);
 
     return GestureDetector(
       onTap: onTap,
@@ -65,18 +74,19 @@ class ProductCard extends StatelessWidget {
                         top: Radius.circular(24),
                       ),
                       child: Container(
-                        color: _categoryColor.withValues(alpha: 0.08),
+                        color: categoryColor.withValues(alpha: 0.08),
                         child: product.imageUrl != null
                             ? CachedNetworkImage(
                                 imageUrl: product.imageUrl!,
                                 fit: BoxFit.cover,
                                 width: double.infinity,
                                 height: double.infinity,
-                                placeholder: (_, __) => _buildPlaceholder(),
+                                placeholder: (_, __) =>
+                                    _buildPlaceholder(categoryColor),
                                 errorWidget: (_, __, ___) =>
-                                    _buildPlaceholder(),
+                                    _buildPlaceholder(categoryColor),
                               )
-                            : _buildPlaceholder(),
+                            : _buildPlaceholder(categoryColor),
                       ),
                     ),
                   ),
@@ -90,7 +100,9 @@ class ProductCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: colorScheme.surface.withValues(alpha: 0.9),
+                          color: isFavorite
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surface.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -121,18 +133,18 @@ class ProductCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: _categoryColor.withValues(alpha: 0.85),
+                        color: categoryColor.withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: _categoryColor.withValues(alpha: 0.3),
+                            color: categoryColor.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Text(
-                        'categories.${product.category}'.tr(),
+                        'categories.${product.category ?? 'misc'}'.tr(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 11,
@@ -278,19 +290,19 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(Color color) {
     return Center(
       child: Icon(
         LucideIcons.leaf,
         size: 48,
-        color: _categoryColor.withValues(alpha: 0.4),
+        color: color.withValues(alpha: 0.4),
       ),
     );
   }
 }
 
 /// Compact version for horizontal lists
-class ProductCardCompact extends StatelessWidget {
+class ProductCardCompact extends ConsumerWidget {
   final db.Product product;
   final String? brandName;
   final VoidCallback? onTap;
@@ -311,11 +323,18 @@ class ProductCardCompact extends StatelessWidget {
         : product.nameFr;
   }
 
-  Color get _categoryColor => CategoryColors.forCategory(product.category);
+  Color _getCategoryColor(WidgetRef ref) {
+    final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
+    return CategoryColors.forCategory(
+      product.category,
+      dynamicColors: dynamicColors,
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final categoryColor = _getCategoryColor(ref);
 
     return GestureDetector(
       onTap: onTap,
@@ -346,7 +365,7 @@ class ProductCardCompact extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   height: double.infinity,
-                  color: _categoryColor.withValues(alpha: 0.08),
+                  color: categoryColor.withValues(alpha: 0.08),
                   child: product.imageUrl != null
                       ? CachedNetworkImage(
                           imageUrl: product.imageUrl!,
@@ -357,14 +376,14 @@ class ProductCardCompact extends StatelessWidget {
                             child: Icon(
                               LucideIcons.leaf,
                               size: 32,
-                              color: _categoryColor.withValues(alpha: 0.4),
+                              color: categoryColor.withValues(alpha: 0.4),
                             ),
                           ),
                           errorWidget: (_, __, ___) => Center(
                             child: Icon(
                               LucideIcons.leaf,
                               size: 32,
-                              color: _categoryColor.withValues(alpha: 0.4),
+                              color: categoryColor.withValues(alpha: 0.4),
                             ),
                           ),
                         )
@@ -372,7 +391,7 @@ class ProductCardCompact extends StatelessWidget {
                           child: Icon(
                             LucideIcons.leaf,
                             size: 32,
-                            color: _categoryColor.withValues(alpha: 0.4),
+                            color: categoryColor.withValues(alpha: 0.4),
                           ),
                         ),
                 ),
@@ -420,13 +439,14 @@ class ProductCardCompact extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary,
+                            color: categoryColor, // Use category color here
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             LucideIcons.arrowRight,
                             size: 12,
-                            color: colorScheme.onPrimary,
+                            color: Colors
+                                .white, // Ensure visible on category color
                           ),
                         ),
                       ],

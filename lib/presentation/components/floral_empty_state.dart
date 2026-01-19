@@ -4,7 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class FloralEmptyState extends StatelessWidget {
-  const FloralEmptyState({super.key});
+  final String? title;
+  final String? subtitle;
+  final String? buttonText;
+
+  const FloralEmptyState({
+    super.key,
+    this.title,
+    this.subtitle,
+    this.buttonText,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +49,7 @@ class FloralEmptyState extends StatelessWidget {
 
             // Title
             Text(
-              'favorites.empty_title'.tr(), // "Your Heart is Empty" or similar
+              title ?? 'favorites.empty_title'.tr(),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
@@ -51,8 +60,7 @@ class FloralEmptyState extends StatelessWidget {
 
             // Subtitle
             Text(
-              'favorites.empty_subtitle'
-                  .tr(), // "Start adding your favorite natural products here."
+              subtitle ?? 'favorites.empty_subtitle'.tr(),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 height: 1.5,
@@ -77,7 +85,7 @@ class FloralEmptyState extends StatelessWidget {
               ),
               icon: const Icon(LucideIcons.search),
               label: Text(
-                'favorites.start_exploring'.tr(), // "Start Exploring"
+                buttonText ?? 'favorites.start_exploring'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),

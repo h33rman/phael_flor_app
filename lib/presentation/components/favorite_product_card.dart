@@ -206,7 +206,8 @@ class FavoriteProductCard extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
-                                    'categories.${product.category}'.tr(),
+                                    'categories.${product.category ?? 'misc'}'
+                                        .tr(),
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelSmall
