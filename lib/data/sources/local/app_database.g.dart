@@ -37,6 +37,17 @@ class $BrandsTable extends Brands with TableInfo<$BrandsTable, Brand> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _iconUrlMeta = const VerificationMeta(
+    'iconUrl',
+  );
+  @override
+  late final GeneratedColumn<String> iconUrl = GeneratedColumn<String>(
+    'icon_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _descriptionFrMeta = const VerificationMeta(
     'descriptionFr',
   );
@@ -75,6 +86,7 @@ class $BrandsTable extends Brands with TableInfo<$BrandsTable, Brand> {
     id,
     name,
     logoUrl,
+    iconUrl,
     descriptionFr,
     descriptionEn,
     createdAt,
@@ -108,6 +120,12 @@ class $BrandsTable extends Brands with TableInfo<$BrandsTable, Brand> {
       context.handle(
         _logoUrlMeta,
         logoUrl.isAcceptableOrUnknown(data['logo_url']!, _logoUrlMeta),
+      );
+    }
+    if (data.containsKey('icon_url')) {
+      context.handle(
+        _iconUrlMeta,
+        iconUrl.isAcceptableOrUnknown(data['icon_url']!, _iconUrlMeta),
       );
     }
     if (data.containsKey('description_fr')) {
@@ -155,6 +173,10 @@ class $BrandsTable extends Brands with TableInfo<$BrandsTable, Brand> {
         DriftSqlType.string,
         data['${effectivePrefix}logo_url'],
       ),
+      iconUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_url'],
+      ),
       descriptionFr: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}description_fr'],
@@ -180,6 +202,7 @@ class Brand extends DataClass implements Insertable<Brand> {
   final String id;
   final String name;
   final String? logoUrl;
+  final String? iconUrl;
   final String? descriptionFr;
   final String? descriptionEn;
   final DateTime? createdAt;
@@ -187,6 +210,7 @@ class Brand extends DataClass implements Insertable<Brand> {
     required this.id,
     required this.name,
     this.logoUrl,
+    this.iconUrl,
     this.descriptionFr,
     this.descriptionEn,
     this.createdAt,
@@ -198,6 +222,9 @@ class Brand extends DataClass implements Insertable<Brand> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || logoUrl != null) {
       map['logo_url'] = Variable<String>(logoUrl);
+    }
+    if (!nullToAbsent || iconUrl != null) {
+      map['icon_url'] = Variable<String>(iconUrl);
     }
     if (!nullToAbsent || descriptionFr != null) {
       map['description_fr'] = Variable<String>(descriptionFr);
@@ -218,6 +245,9 @@ class Brand extends DataClass implements Insertable<Brand> {
       logoUrl: logoUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(logoUrl),
+      iconUrl: iconUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconUrl),
       descriptionFr: descriptionFr == null && nullToAbsent
           ? const Value.absent()
           : Value(descriptionFr),
@@ -239,6 +269,7 @@ class Brand extends DataClass implements Insertable<Brand> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       logoUrl: serializer.fromJson<String?>(json['logoUrl']),
+      iconUrl: serializer.fromJson<String?>(json['iconUrl']),
       descriptionFr: serializer.fromJson<String?>(json['descriptionFr']),
       descriptionEn: serializer.fromJson<String?>(json['descriptionEn']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -251,6 +282,7 @@ class Brand extends DataClass implements Insertable<Brand> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'logoUrl': serializer.toJson<String?>(logoUrl),
+      'iconUrl': serializer.toJson<String?>(iconUrl),
       'descriptionFr': serializer.toJson<String?>(descriptionFr),
       'descriptionEn': serializer.toJson<String?>(descriptionEn),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -261,6 +293,7 @@ class Brand extends DataClass implements Insertable<Brand> {
     String? id,
     String? name,
     Value<String?> logoUrl = const Value.absent(),
+    Value<String?> iconUrl = const Value.absent(),
     Value<String?> descriptionFr = const Value.absent(),
     Value<String?> descriptionEn = const Value.absent(),
     Value<DateTime?> createdAt = const Value.absent(),
@@ -268,6 +301,7 @@ class Brand extends DataClass implements Insertable<Brand> {
     id: id ?? this.id,
     name: name ?? this.name,
     logoUrl: logoUrl.present ? logoUrl.value : this.logoUrl,
+    iconUrl: iconUrl.present ? iconUrl.value : this.iconUrl,
     descriptionFr: descriptionFr.present
         ? descriptionFr.value
         : this.descriptionFr,
@@ -281,6 +315,7 @@ class Brand extends DataClass implements Insertable<Brand> {
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
       logoUrl: data.logoUrl.present ? data.logoUrl.value : this.logoUrl,
+      iconUrl: data.iconUrl.present ? data.iconUrl.value : this.iconUrl,
       descriptionFr: data.descriptionFr.present
           ? data.descriptionFr.value
           : this.descriptionFr,
@@ -297,6 +332,7 @@ class Brand extends DataClass implements Insertable<Brand> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('logoUrl: $logoUrl, ')
+          ..write('iconUrl: $iconUrl, ')
           ..write('descriptionFr: $descriptionFr, ')
           ..write('descriptionEn: $descriptionEn, ')
           ..write('createdAt: $createdAt')
@@ -305,8 +341,15 @@ class Brand extends DataClass implements Insertable<Brand> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, logoUrl, descriptionFr, descriptionEn, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    logoUrl,
+    iconUrl,
+    descriptionFr,
+    descriptionEn,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -314,6 +357,7 @@ class Brand extends DataClass implements Insertable<Brand> {
           other.id == this.id &&
           other.name == this.name &&
           other.logoUrl == this.logoUrl &&
+          other.iconUrl == this.iconUrl &&
           other.descriptionFr == this.descriptionFr &&
           other.descriptionEn == this.descriptionEn &&
           other.createdAt == this.createdAt);
@@ -323,6 +367,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> logoUrl;
+  final Value<String?> iconUrl;
   final Value<String?> descriptionFr;
   final Value<String?> descriptionEn;
   final Value<DateTime?> createdAt;
@@ -331,6 +376,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.logoUrl = const Value.absent(),
+    this.iconUrl = const Value.absent(),
     this.descriptionFr = const Value.absent(),
     this.descriptionEn = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -340,6 +386,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
     required String id,
     required String name,
     this.logoUrl = const Value.absent(),
+    this.iconUrl = const Value.absent(),
     this.descriptionFr = const Value.absent(),
     this.descriptionEn = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -350,6 +397,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? logoUrl,
+    Expression<String>? iconUrl,
     Expression<String>? descriptionFr,
     Expression<String>? descriptionEn,
     Expression<DateTime>? createdAt,
@@ -359,6 +407,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (logoUrl != null) 'logo_url': logoUrl,
+      if (iconUrl != null) 'icon_url': iconUrl,
       if (descriptionFr != null) 'description_fr': descriptionFr,
       if (descriptionEn != null) 'description_en': descriptionEn,
       if (createdAt != null) 'created_at': createdAt,
@@ -370,6 +419,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
     Value<String>? id,
     Value<String>? name,
     Value<String?>? logoUrl,
+    Value<String?>? iconUrl,
     Value<String?>? descriptionFr,
     Value<String?>? descriptionEn,
     Value<DateTime?>? createdAt,
@@ -379,6 +429,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
       id: id ?? this.id,
       name: name ?? this.name,
       logoUrl: logoUrl ?? this.logoUrl,
+      iconUrl: iconUrl ?? this.iconUrl,
       descriptionFr: descriptionFr ?? this.descriptionFr,
       descriptionEn: descriptionEn ?? this.descriptionEn,
       createdAt: createdAt ?? this.createdAt,
@@ -397,6 +448,9 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
     }
     if (logoUrl.present) {
       map['logo_url'] = Variable<String>(logoUrl.value);
+    }
+    if (iconUrl.present) {
+      map['icon_url'] = Variable<String>(iconUrl.value);
     }
     if (descriptionFr.present) {
       map['description_fr'] = Variable<String>(descriptionFr.value);
@@ -419,6 +473,7 @@ class BrandsCompanion extends UpdateCompanion<Brand> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('logoUrl: $logoUrl, ')
+          ..write('iconUrl: $iconUrl, ')
           ..write('descriptionFr: $descriptionFr, ')
           ..write('descriptionEn: $descriptionEn, ')
           ..write('createdAt: $createdAt, ')
@@ -452,6 +507,17 @@ class $CategoryLabelsTable extends CategoryLabels
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _iconUrlMeta = const VerificationMeta(
+    'iconUrl',
+  );
+  @override
+  late final GeneratedColumn<String> iconUrl = GeneratedColumn<String>(
+    'icon_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
@@ -462,7 +528,7 @@ class $CategoryLabelsTable extends CategoryLabels
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [key, label, color];
+  List<GeneratedColumn> get $columns => [key, label, iconUrl, color];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -491,6 +557,12 @@ class $CategoryLabelsTable extends CategoryLabels
     } else if (isInserting) {
       context.missing(_labelMeta);
     }
+    if (data.containsKey('icon_url')) {
+      context.handle(
+        _iconUrlMeta,
+        iconUrl.isAcceptableOrUnknown(data['icon_url']!, _iconUrlMeta),
+      );
+    }
     if (data.containsKey('color')) {
       context.handle(
         _colorMeta,
@@ -514,6 +586,10 @@ class $CategoryLabelsTable extends CategoryLabels
         DriftSqlType.string,
         data['${effectivePrefix}label'],
       )!,
+      iconUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_url'],
+      ),
       color: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}color'],
@@ -530,13 +606,22 @@ class $CategoryLabelsTable extends CategoryLabels
 class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
   final String key;
   final String label;
+  final String? iconUrl;
   final String? color;
-  const CategoryLabel({required this.key, required this.label, this.color});
+  const CategoryLabel({
+    required this.key,
+    required this.label,
+    this.iconUrl,
+    this.color,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['key'] = Variable<String>(key);
     map['label'] = Variable<String>(label);
+    if (!nullToAbsent || iconUrl != null) {
+      map['icon_url'] = Variable<String>(iconUrl);
+    }
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
     }
@@ -547,6 +632,9 @@ class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
     return CategoryLabelsCompanion(
       key: Value(key),
       label: Value(label),
+      iconUrl: iconUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconUrl),
       color: color == null && nullToAbsent
           ? const Value.absent()
           : Value(color),
@@ -561,6 +649,7 @@ class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
     return CategoryLabel(
       key: serializer.fromJson<String>(json['key']),
       label: serializer.fromJson<String>(json['label']),
+      iconUrl: serializer.fromJson<String?>(json['iconUrl']),
       color: serializer.fromJson<String?>(json['color']),
     );
   }
@@ -570,6 +659,7 @@ class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
       'label': serializer.toJson<String>(label),
+      'iconUrl': serializer.toJson<String?>(iconUrl),
       'color': serializer.toJson<String?>(color),
     };
   }
@@ -577,16 +667,19 @@ class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
   CategoryLabel copyWith({
     String? key,
     String? label,
+    Value<String?> iconUrl = const Value.absent(),
     Value<String?> color = const Value.absent(),
   }) => CategoryLabel(
     key: key ?? this.key,
     label: label ?? this.label,
+    iconUrl: iconUrl.present ? iconUrl.value : this.iconUrl,
     color: color.present ? color.value : this.color,
   );
   CategoryLabel copyWithCompanion(CategoryLabelsCompanion data) {
     return CategoryLabel(
       key: data.key.present ? data.key.value : this.key,
       label: data.label.present ? data.label.value : this.label,
+      iconUrl: data.iconUrl.present ? data.iconUrl.value : this.iconUrl,
       color: data.color.present ? data.color.value : this.color,
     );
   }
@@ -596,36 +689,41 @@ class CategoryLabel extends DataClass implements Insertable<CategoryLabel> {
     return (StringBuffer('CategoryLabel(')
           ..write('key: $key, ')
           ..write('label: $label, ')
+          ..write('iconUrl: $iconUrl, ')
           ..write('color: $color')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(key, label, color);
+  int get hashCode => Object.hash(key, label, iconUrl, color);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CategoryLabel &&
           other.key == this.key &&
           other.label == this.label &&
+          other.iconUrl == this.iconUrl &&
           other.color == this.color);
 }
 
 class CategoryLabelsCompanion extends UpdateCompanion<CategoryLabel> {
   final Value<String> key;
   final Value<String> label;
+  final Value<String?> iconUrl;
   final Value<String?> color;
   final Value<int> rowid;
   const CategoryLabelsCompanion({
     this.key = const Value.absent(),
     this.label = const Value.absent(),
+    this.iconUrl = const Value.absent(),
     this.color = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoryLabelsCompanion.insert({
     required String key,
     required String label,
+    this.iconUrl = const Value.absent(),
     this.color = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : key = Value(key),
@@ -633,12 +731,14 @@ class CategoryLabelsCompanion extends UpdateCompanion<CategoryLabel> {
   static Insertable<CategoryLabel> custom({
     Expression<String>? key,
     Expression<String>? label,
+    Expression<String>? iconUrl,
     Expression<String>? color,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (key != null) 'key': key,
       if (label != null) 'label': label,
+      if (iconUrl != null) 'icon_url': iconUrl,
       if (color != null) 'color': color,
       if (rowid != null) 'rowid': rowid,
     });
@@ -647,12 +747,14 @@ class CategoryLabelsCompanion extends UpdateCompanion<CategoryLabel> {
   CategoryLabelsCompanion copyWith({
     Value<String>? key,
     Value<String>? label,
+    Value<String?>? iconUrl,
     Value<String?>? color,
     Value<int>? rowid,
   }) {
     return CategoryLabelsCompanion(
       key: key ?? this.key,
       label: label ?? this.label,
+      iconUrl: iconUrl ?? this.iconUrl,
       color: color ?? this.color,
       rowid: rowid ?? this.rowid,
     );
@@ -666,6 +768,9 @@ class CategoryLabelsCompanion extends UpdateCompanion<CategoryLabel> {
     }
     if (label.present) {
       map['label'] = Variable<String>(label.value);
+    }
+    if (iconUrl.present) {
+      map['icon_url'] = Variable<String>(iconUrl.value);
     }
     if (color.present) {
       map['color'] = Variable<String>(color.value);
@@ -681,6 +786,7 @@ class CategoryLabelsCompanion extends UpdateCompanion<CategoryLabel> {
     return (StringBuffer('CategoryLabelsCompanion(')
           ..write('key: $key, ')
           ..write('label: $label, ')
+          ..write('iconUrl: $iconUrl, ')
           ..write('color: $color, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -907,6 +1013,29 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _tagsIdsMeta = const VerificationMeta(
+    'tagsIds',
+  );
+  @override
+  late final GeneratedColumn<String> tagsIds = GeneratedColumn<String>(
+    'tags_ids',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _certificationsIdsMeta = const VerificationMeta(
+    'certificationsIds',
+  );
+  @override
+  late final GeneratedColumn<String> certificationsIds =
+      GeneratedColumn<String>(
+        'certifications_ids',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -966,6 +1095,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     usages,
     expertNoteFr,
     expertNoteEn,
+    tagsIds,
+    certificationsIds,
     isActive,
     createdAt,
     updatedAt,
@@ -1132,6 +1263,21 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         ),
       );
     }
+    if (data.containsKey('tags_ids')) {
+      context.handle(
+        _tagsIdsMeta,
+        tagsIds.isAcceptableOrUnknown(data['tags_ids']!, _tagsIdsMeta),
+      );
+    }
+    if (data.containsKey('certifications_ids')) {
+      context.handle(
+        _certificationsIdsMeta,
+        certificationsIds.isAcceptableOrUnknown(
+          data['certifications_ids']!,
+          _certificationsIdsMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -1239,6 +1385,14 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.string,
         data['${effectivePrefix}expert_note_en'],
       ),
+      tagsIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags_ids'],
+      ),
+      certificationsIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}certifications_ids'],
+      ),
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -1281,6 +1435,8 @@ class Product extends DataClass implements Insertable<Product> {
   final String? usages;
   final String? expertNoteFr;
   final String? expertNoteEn;
+  final String? tagsIds;
+  final String? certificationsIds;
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -1305,6 +1461,8 @@ class Product extends DataClass implements Insertable<Product> {
     this.usages,
     this.expertNoteFr,
     this.expertNoteEn,
+    this.tagsIds,
+    this.certificationsIds,
     required this.isActive,
     this.createdAt,
     this.updatedAt,
@@ -1365,6 +1523,12 @@ class Product extends DataClass implements Insertable<Product> {
     }
     if (!nullToAbsent || expertNoteEn != null) {
       map['expert_note_en'] = Variable<String>(expertNoteEn);
+    }
+    if (!nullToAbsent || tagsIds != null) {
+      map['tags_ids'] = Variable<String>(tagsIds);
+    }
+    if (!nullToAbsent || certificationsIds != null) {
+      map['certifications_ids'] = Variable<String>(certificationsIds);
     }
     map['is_active'] = Variable<bool>(isActive);
     if (!nullToAbsent || createdAt != null) {
@@ -1428,6 +1592,12 @@ class Product extends DataClass implements Insertable<Product> {
       expertNoteEn: expertNoteEn == null && nullToAbsent
           ? const Value.absent()
           : Value(expertNoteEn),
+      tagsIds: tagsIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tagsIds),
+      certificationsIds: certificationsIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(certificationsIds),
       isActive: Value(isActive),
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
@@ -1464,6 +1634,10 @@ class Product extends DataClass implements Insertable<Product> {
       usages: serializer.fromJson<String?>(json['usages']),
       expertNoteFr: serializer.fromJson<String?>(json['expertNoteFr']),
       expertNoteEn: serializer.fromJson<String?>(json['expertNoteEn']),
+      tagsIds: serializer.fromJson<String?>(json['tagsIds']),
+      certificationsIds: serializer.fromJson<String?>(
+        json['certificationsIds'],
+      ),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
@@ -1493,6 +1667,8 @@ class Product extends DataClass implements Insertable<Product> {
       'usages': serializer.toJson<String?>(usages),
       'expertNoteFr': serializer.toJson<String?>(expertNoteFr),
       'expertNoteEn': serializer.toJson<String?>(expertNoteEn),
+      'tagsIds': serializer.toJson<String?>(tagsIds),
+      'certificationsIds': serializer.toJson<String?>(certificationsIds),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
@@ -1520,6 +1696,8 @@ class Product extends DataClass implements Insertable<Product> {
     Value<String?> usages = const Value.absent(),
     Value<String?> expertNoteFr = const Value.absent(),
     Value<String?> expertNoteEn = const Value.absent(),
+    Value<String?> tagsIds = const Value.absent(),
+    Value<String?> certificationsIds = const Value.absent(),
     bool? isActive,
     Value<DateTime?> createdAt = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
@@ -1548,6 +1726,10 @@ class Product extends DataClass implements Insertable<Product> {
     usages: usages.present ? usages.value : this.usages,
     expertNoteFr: expertNoteFr.present ? expertNoteFr.value : this.expertNoteFr,
     expertNoteEn: expertNoteEn.present ? expertNoteEn.value : this.expertNoteEn,
+    tagsIds: tagsIds.present ? tagsIds.value : this.tagsIds,
+    certificationsIds: certificationsIds.present
+        ? certificationsIds.value
+        : this.certificationsIds,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
@@ -1592,6 +1774,10 @@ class Product extends DataClass implements Insertable<Product> {
       expertNoteEn: data.expertNoteEn.present
           ? data.expertNoteEn.value
           : this.expertNoteEn,
+      tagsIds: data.tagsIds.present ? data.tagsIds.value : this.tagsIds,
+      certificationsIds: data.certificationsIds.present
+          ? data.certificationsIds.value
+          : this.certificationsIds,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -1621,6 +1807,8 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('usages: $usages, ')
           ..write('expertNoteFr: $expertNoteFr, ')
           ..write('expertNoteEn: $expertNoteEn, ')
+          ..write('tagsIds: $tagsIds, ')
+          ..write('certificationsIds: $certificationsIds, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -1650,6 +1838,8 @@ class Product extends DataClass implements Insertable<Product> {
     usages,
     expertNoteFr,
     expertNoteEn,
+    tagsIds,
+    certificationsIds,
     isActive,
     createdAt,
     updatedAt,
@@ -1678,6 +1868,8 @@ class Product extends DataClass implements Insertable<Product> {
           other.usages == this.usages &&
           other.expertNoteFr == this.expertNoteFr &&
           other.expertNoteEn == this.expertNoteEn &&
+          other.tagsIds == this.tagsIds &&
+          other.certificationsIds == this.certificationsIds &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -1704,6 +1896,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String?> usages;
   final Value<String?> expertNoteFr;
   final Value<String?> expertNoteEn;
+  final Value<String?> tagsIds;
+  final Value<String?> certificationsIds;
   final Value<bool> isActive;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
@@ -1729,6 +1923,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.usages = const Value.absent(),
     this.expertNoteFr = const Value.absent(),
     this.expertNoteEn = const Value.absent(),
+    this.tagsIds = const Value.absent(),
+    this.certificationsIds = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1755,6 +1951,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.usages = const Value.absent(),
     this.expertNoteFr = const Value.absent(),
     this.expertNoteEn = const Value.absent(),
+    this.tagsIds = const Value.absent(),
+    this.certificationsIds = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1783,6 +1981,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? usages,
     Expression<String>? expertNoteFr,
     Expression<String>? expertNoteEn,
+    Expression<String>? tagsIds,
+    Expression<String>? certificationsIds,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -1809,6 +2009,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (usages != null) 'usages': usages,
       if (expertNoteFr != null) 'expert_note_fr': expertNoteFr,
       if (expertNoteEn != null) 'expert_note_en': expertNoteEn,
+      if (tagsIds != null) 'tags_ids': tagsIds,
+      if (certificationsIds != null) 'certifications_ids': certificationsIds,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -1837,6 +2039,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<String?>? usages,
     Value<String?>? expertNoteFr,
     Value<String?>? expertNoteEn,
+    Value<String?>? tagsIds,
+    Value<String?>? certificationsIds,
     Value<bool>? isActive,
     Value<DateTime?>? createdAt,
     Value<DateTime?>? updatedAt,
@@ -1863,6 +2067,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       usages: usages ?? this.usages,
       expertNoteFr: expertNoteFr ?? this.expertNoteFr,
       expertNoteEn: expertNoteEn ?? this.expertNoteEn,
+      tagsIds: tagsIds ?? this.tagsIds,
+      certificationsIds: certificationsIds ?? this.certificationsIds,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -1933,6 +2139,12 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (expertNoteEn.present) {
       map['expert_note_en'] = Variable<String>(expertNoteEn.value);
     }
+    if (tagsIds.present) {
+      map['tags_ids'] = Variable<String>(tagsIds.value);
+    }
+    if (certificationsIds.present) {
+      map['certifications_ids'] = Variable<String>(certificationsIds.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -1971,6 +2183,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('usages: $usages, ')
           ..write('expertNoteFr: $expertNoteFr, ')
           ..write('expertNoteEn: $expertNoteEn, ')
+          ..write('tagsIds: $tagsIds, ')
+          ..write('certificationsIds: $certificationsIds, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -3617,240 +3831,6 @@ class CertificationsCompanion extends UpdateCompanion<Certification> {
   }
 }
 
-class $ProductCertificationsTable extends ProductCertifications
-    with TableInfo<$ProductCertificationsTable, ProductCertification> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ProductCertificationsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _productIdMeta = const VerificationMeta(
-    'productId',
-  );
-  @override
-  late final GeneratedColumn<String> productId = GeneratedColumn<String>(
-    'product_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES products (id)',
-    ),
-  );
-  static const VerificationMeta _certificationIdMeta = const VerificationMeta(
-    'certificationId',
-  );
-  @override
-  late final GeneratedColumn<String> certificationId = GeneratedColumn<String>(
-    'certification_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES certifications (id)',
-    ),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [productId, certificationId];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'product_certifications';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ProductCertification> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('product_id')) {
-      context.handle(
-        _productIdMeta,
-        productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_productIdMeta);
-    }
-    if (data.containsKey('certification_id')) {
-      context.handle(
-        _certificationIdMeta,
-        certificationId.isAcceptableOrUnknown(
-          data['certification_id']!,
-          _certificationIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_certificationIdMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {productId, certificationId};
-  @override
-  ProductCertification map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ProductCertification(
-      productId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}product_id'],
-      )!,
-      certificationId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}certification_id'],
-      )!,
-    );
-  }
-
-  @override
-  $ProductCertificationsTable createAlias(String alias) {
-    return $ProductCertificationsTable(attachedDatabase, alias);
-  }
-}
-
-class ProductCertification extends DataClass
-    implements Insertable<ProductCertification> {
-  final String productId;
-  final String certificationId;
-  const ProductCertification({
-    required this.productId,
-    required this.certificationId,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['product_id'] = Variable<String>(productId);
-    map['certification_id'] = Variable<String>(certificationId);
-    return map;
-  }
-
-  ProductCertificationsCompanion toCompanion(bool nullToAbsent) {
-    return ProductCertificationsCompanion(
-      productId: Value(productId),
-      certificationId: Value(certificationId),
-    );
-  }
-
-  factory ProductCertification.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ProductCertification(
-      productId: serializer.fromJson<String>(json['productId']),
-      certificationId: serializer.fromJson<String>(json['certificationId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'productId': serializer.toJson<String>(productId),
-      'certificationId': serializer.toJson<String>(certificationId),
-    };
-  }
-
-  ProductCertification copyWith({String? productId, String? certificationId}) =>
-      ProductCertification(
-        productId: productId ?? this.productId,
-        certificationId: certificationId ?? this.certificationId,
-      );
-  ProductCertification copyWithCompanion(ProductCertificationsCompanion data) {
-    return ProductCertification(
-      productId: data.productId.present ? data.productId.value : this.productId,
-      certificationId: data.certificationId.present
-          ? data.certificationId.value
-          : this.certificationId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ProductCertification(')
-          ..write('productId: $productId, ')
-          ..write('certificationId: $certificationId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(productId, certificationId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ProductCertification &&
-          other.productId == this.productId &&
-          other.certificationId == this.certificationId);
-}
-
-class ProductCertificationsCompanion
-    extends UpdateCompanion<ProductCertification> {
-  final Value<String> productId;
-  final Value<String> certificationId;
-  final Value<int> rowid;
-  const ProductCertificationsCompanion({
-    this.productId = const Value.absent(),
-    this.certificationId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ProductCertificationsCompanion.insert({
-    required String productId,
-    required String certificationId,
-    this.rowid = const Value.absent(),
-  }) : productId = Value(productId),
-       certificationId = Value(certificationId);
-  static Insertable<ProductCertification> custom({
-    Expression<String>? productId,
-    Expression<String>? certificationId,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (productId != null) 'product_id': productId,
-      if (certificationId != null) 'certification_id': certificationId,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ProductCertificationsCompanion copyWith({
-    Value<String>? productId,
-    Value<String>? certificationId,
-    Value<int>? rowid,
-  }) {
-    return ProductCertificationsCompanion(
-      productId: productId ?? this.productId,
-      certificationId: certificationId ?? this.certificationId,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (productId.present) {
-      map['product_id'] = Variable<String>(productId.value);
-    }
-    if (certificationId.present) {
-      map['certification_id'] = Variable<String>(certificationId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ProductCertificationsCompanion(')
-          ..write('productId: $productId, ')
-          ..write('certificationId: $certificationId, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -4111,227 +4091,6 @@ class TagsCompanion extends UpdateCompanion<Tag> {
   }
 }
 
-class $ProductTagsTable extends ProductTags
-    with TableInfo<$ProductTagsTable, ProductTag> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ProductTagsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _productIdMeta = const VerificationMeta(
-    'productId',
-  );
-  @override
-  late final GeneratedColumn<String> productId = GeneratedColumn<String>(
-    'product_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES products (id)',
-    ),
-  );
-  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
-  @override
-  late final GeneratedColumn<String> tagId = GeneratedColumn<String>(
-    'tag_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES tags (id)',
-    ),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [productId, tagId];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'product_tags';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ProductTag> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('product_id')) {
-      context.handle(
-        _productIdMeta,
-        productId.isAcceptableOrUnknown(data['product_id']!, _productIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_productIdMeta);
-    }
-    if (data.containsKey('tag_id')) {
-      context.handle(
-        _tagIdMeta,
-        tagId.isAcceptableOrUnknown(data['tag_id']!, _tagIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_tagIdMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {productId, tagId};
-  @override
-  ProductTag map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ProductTag(
-      productId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}product_id'],
-      )!,
-      tagId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}tag_id'],
-      )!,
-    );
-  }
-
-  @override
-  $ProductTagsTable createAlias(String alias) {
-    return $ProductTagsTable(attachedDatabase, alias);
-  }
-}
-
-class ProductTag extends DataClass implements Insertable<ProductTag> {
-  final String productId;
-  final String tagId;
-  const ProductTag({required this.productId, required this.tagId});
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['product_id'] = Variable<String>(productId);
-    map['tag_id'] = Variable<String>(tagId);
-    return map;
-  }
-
-  ProductTagsCompanion toCompanion(bool nullToAbsent) {
-    return ProductTagsCompanion(
-      productId: Value(productId),
-      tagId: Value(tagId),
-    );
-  }
-
-  factory ProductTag.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ProductTag(
-      productId: serializer.fromJson<String>(json['productId']),
-      tagId: serializer.fromJson<String>(json['tagId']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'productId': serializer.toJson<String>(productId),
-      'tagId': serializer.toJson<String>(tagId),
-    };
-  }
-
-  ProductTag copyWith({String? productId, String? tagId}) => ProductTag(
-    productId: productId ?? this.productId,
-    tagId: tagId ?? this.tagId,
-  );
-  ProductTag copyWithCompanion(ProductTagsCompanion data) {
-    return ProductTag(
-      productId: data.productId.present ? data.productId.value : this.productId,
-      tagId: data.tagId.present ? data.tagId.value : this.tagId,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ProductTag(')
-          ..write('productId: $productId, ')
-          ..write('tagId: $tagId')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(productId, tagId);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ProductTag &&
-          other.productId == this.productId &&
-          other.tagId == this.tagId);
-}
-
-class ProductTagsCompanion extends UpdateCompanion<ProductTag> {
-  final Value<String> productId;
-  final Value<String> tagId;
-  final Value<int> rowid;
-  const ProductTagsCompanion({
-    this.productId = const Value.absent(),
-    this.tagId = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ProductTagsCompanion.insert({
-    required String productId,
-    required String tagId,
-    this.rowid = const Value.absent(),
-  }) : productId = Value(productId),
-       tagId = Value(tagId);
-  static Insertable<ProductTag> custom({
-    Expression<String>? productId,
-    Expression<String>? tagId,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (productId != null) 'product_id': productId,
-      if (tagId != null) 'tag_id': tagId,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ProductTagsCompanion copyWith({
-    Value<String>? productId,
-    Value<String>? tagId,
-    Value<int>? rowid,
-  }) {
-    return ProductTagsCompanion(
-      productId: productId ?? this.productId,
-      tagId: tagId ?? this.tagId,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (productId.present) {
-      map['product_id'] = Variable<String>(productId.value);
-    }
-    if (tagId.present) {
-      map['tag_id'] = Variable<String>(tagId.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ProductTagsCompanion(')
-          ..write('productId: $productId, ')
-          ..write('tagId: $tagId, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4344,10 +4103,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ArticlesTable articles = $ArticlesTable(this);
   late final $FavoritesTable favorites = $FavoritesTable(this);
   late final $CertificationsTable certifications = $CertificationsTable(this);
-  late final $ProductCertificationsTable productCertifications =
-      $ProductCertificationsTable(this);
   late final $TagsTable tags = $TagsTable(this);
-  late final $ProductTagsTable productTags = $ProductTagsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4361,9 +4117,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     articles,
     favorites,
     certifications,
-    productCertifications,
     tags,
-    productTags,
   ];
 }
 
@@ -4372,6 +4126,7 @@ typedef $$BrandsTableCreateCompanionBuilder =
       required String id,
       required String name,
       Value<String?> logoUrl,
+      Value<String?> iconUrl,
       Value<String?> descriptionFr,
       Value<String?> descriptionEn,
       Value<DateTime?> createdAt,
@@ -4382,6 +4137,7 @@ typedef $$BrandsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String?> logoUrl,
+      Value<String?> iconUrl,
       Value<String?> descriptionFr,
       Value<String?> descriptionEn,
       Value<DateTime?> createdAt,
@@ -4433,6 +4189,11 @@ class $$BrandsTableFilterComposer
 
   ColumnFilters<String> get logoUrl => $composableBuilder(
     column: $table.logoUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconUrl => $composableBuilder(
+    column: $table.iconUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4501,6 +4262,11 @@ class $$BrandsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get iconUrl => $composableBuilder(
+    column: $table.iconUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get descriptionFr => $composableBuilder(
     column: $table.descriptionFr,
     builder: (column) => ColumnOrderings(column),
@@ -4534,6 +4300,9 @@ class $$BrandsTableAnnotationComposer
 
   GeneratedColumn<String> get logoUrl =>
       $composableBuilder(column: $table.logoUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get iconUrl =>
+      $composableBuilder(column: $table.iconUrl, builder: (column) => column);
 
   GeneratedColumn<String> get descriptionFr => $composableBuilder(
     column: $table.descriptionFr,
@@ -4605,6 +4374,7 @@ class $$BrandsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> logoUrl = const Value.absent(),
+                Value<String?> iconUrl = const Value.absent(),
                 Value<String?> descriptionFr = const Value.absent(),
                 Value<String?> descriptionEn = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
@@ -4613,6 +4383,7 @@ class $$BrandsTableTableManager
                 id: id,
                 name: name,
                 logoUrl: logoUrl,
+                iconUrl: iconUrl,
                 descriptionFr: descriptionFr,
                 descriptionEn: descriptionEn,
                 createdAt: createdAt,
@@ -4623,6 +4394,7 @@ class $$BrandsTableTableManager
                 required String id,
                 required String name,
                 Value<String?> logoUrl = const Value.absent(),
+                Value<String?> iconUrl = const Value.absent(),
                 Value<String?> descriptionFr = const Value.absent(),
                 Value<String?> descriptionEn = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
@@ -4631,6 +4403,7 @@ class $$BrandsTableTableManager
                 id: id,
                 name: name,
                 logoUrl: logoUrl,
+                iconUrl: iconUrl,
                 descriptionFr: descriptionFr,
                 descriptionEn: descriptionEn,
                 createdAt: createdAt,
@@ -4686,6 +4459,7 @@ typedef $$CategoryLabelsTableCreateCompanionBuilder =
     CategoryLabelsCompanion Function({
       required String key,
       required String label,
+      Value<String?> iconUrl,
       Value<String?> color,
       Value<int> rowid,
     });
@@ -4693,6 +4467,7 @@ typedef $$CategoryLabelsTableUpdateCompanionBuilder =
     CategoryLabelsCompanion Function({
       Value<String> key,
       Value<String> label,
+      Value<String?> iconUrl,
       Value<String?> color,
       Value<int> rowid,
     });
@@ -4747,6 +4522,11 @@ class $$CategoryLabelsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get iconUrl => $composableBuilder(
+    column: $table.iconUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnFilters(column),
@@ -4797,6 +4577,11 @@ class $$CategoryLabelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get iconUrl => $composableBuilder(
+    column: $table.iconUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnOrderings(column),
@@ -4817,6 +4602,9 @@ class $$CategoryLabelsTableAnnotationComposer
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get iconUrl =>
+      $composableBuilder(column: $table.iconUrl, builder: (column) => column);
 
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
@@ -4879,11 +4667,13 @@ class $$CategoryLabelsTableTableManager
               ({
                 Value<String> key = const Value.absent(),
                 Value<String> label = const Value.absent(),
+                Value<String?> iconUrl = const Value.absent(),
                 Value<String?> color = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoryLabelsCompanion(
                 key: key,
                 label: label,
+                iconUrl: iconUrl,
                 color: color,
                 rowid: rowid,
               ),
@@ -4891,11 +4681,13 @@ class $$CategoryLabelsTableTableManager
               ({
                 required String key,
                 required String label,
+                Value<String?> iconUrl = const Value.absent(),
                 Value<String?> color = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoryLabelsCompanion.insert(
                 key: key,
                 label: label,
+                iconUrl: iconUrl,
                 color: color,
                 rowid: rowid,
               ),
@@ -4977,6 +4769,8 @@ typedef $$ProductsTableCreateCompanionBuilder =
       Value<String?> usages,
       Value<String?> expertNoteFr,
       Value<String?> expertNoteEn,
+      Value<String?> tagsIds,
+      Value<String?> certificationsIds,
       Value<bool> isActive,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
@@ -5004,6 +4798,8 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<String?> usages,
       Value<String?> expertNoteFr,
       Value<String?> expertNoteEn,
+      Value<String?> tagsIds,
+      Value<String?> certificationsIds,
       Value<bool> isActive,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
@@ -5064,52 +4860,6 @@ final class $$ProductsTableReferences
     ).filter((f) => f.productId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_favoritesRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<
-    $ProductCertificationsTable,
-    List<ProductCertification>
-  >
-  _productCertificationsRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.productCertifications,
-        aliasName: $_aliasNameGenerator(
-          db.products.id,
-          db.productCertifications.productId,
-        ),
-      );
-
-  $$ProductCertificationsTableProcessedTableManager
-  get productCertificationsRefs {
-    final manager = $$ProductCertificationsTableTableManager(
-      $_db,
-      $_db.productCertifications,
-    ).filter((f) => f.productId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _productCertificationsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<$ProductTagsTable, List<ProductTag>>
-  _productTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.productTags,
-    aliasName: $_aliasNameGenerator(db.products.id, db.productTags.productId),
-  );
-
-  $$ProductTagsTableProcessedTableManager get productTagsRefs {
-    final manager = $$ProductTagsTableTableManager(
-      $_db,
-      $_db.productTags,
-    ).filter((f) => f.productId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_productTagsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5215,6 +4965,16 @@ class $$ProductsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get tagsIds => $composableBuilder(
+    column: $table.tagsIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get certificationsIds => $composableBuilder(
+    column: $table.certificationsIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnFilters(column),
@@ -5292,57 +5052,6 @@ class $$ProductsTableFilterComposer
           }) => $$FavoritesTableFilterComposer(
             $db: $db,
             $table: $db.favorites,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> productCertificationsRefs(
-    Expression<bool> Function($$ProductCertificationsTableFilterComposer f) f,
-  ) {
-    final $$ProductCertificationsTableFilterComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.productCertifications,
-          getReferencedColumn: (t) => t.productId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ProductCertificationsTableFilterComposer(
-                $db: $db,
-                $table: $db.productCertifications,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
-
-  Expression<bool> productTagsRefs(
-    Expression<bool> Function($$ProductTagsTableFilterComposer f) f,
-  ) {
-    final $$ProductTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.productTags,
-      getReferencedColumn: (t) => t.productId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.productTags,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5449,6 +5158,16 @@ class $$ProductsTableOrderingComposer
 
   ColumnOrderings<String> get expertNoteEn => $composableBuilder(
     column: $table.expertNoteEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagsIds => $composableBuilder(
+    column: $table.tagsIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get certificationsIds => $composableBuilder(
+    column: $table.certificationsIds,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5595,6 +5314,14 @@ class $$ProductsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get tagsIds =>
+      $composableBuilder(column: $table.tagsIds, builder: (column) => column);
+
+  GeneratedColumn<String> get certificationsIds => $composableBuilder(
+    column: $table.certificationsIds,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -5674,57 +5401,6 @@ class $$ProductsTableAnnotationComposer
     );
     return f(composer);
   }
-
-  Expression<T> productCertificationsRefs<T extends Object>(
-    Expression<T> Function($$ProductCertificationsTableAnnotationComposer a) f,
-  ) {
-    final $$ProductCertificationsTableAnnotationComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.productCertifications,
-          getReferencedColumn: (t) => t.productId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ProductCertificationsTableAnnotationComposer(
-                $db: $db,
-                $table: $db.productCertifications,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
-
-  Expression<T> productTagsRefs<T extends Object>(
-    Expression<T> Function($$ProductTagsTableAnnotationComposer a) f,
-  ) {
-    final $$ProductTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.productTags,
-      getReferencedColumn: (t) => t.productId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.productTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$ProductsTableTableManager
@@ -5744,8 +5420,6 @@ class $$ProductsTableTableManager
             bool brandId,
             bool category,
             bool favoritesRefs,
-            bool productCertificationsRefs,
-            bool productTagsRefs,
           })
         > {
   $$ProductsTableTableManager(_$AppDatabase db, $ProductsTable table)
@@ -5781,6 +5455,8 @@ class $$ProductsTableTableManager
                 Value<String?> usages = const Value.absent(),
                 Value<String?> expertNoteFr = const Value.absent(),
                 Value<String?> expertNoteEn = const Value.absent(),
+                Value<String?> tagsIds = const Value.absent(),
+                Value<String?> certificationsIds = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -5806,6 +5482,8 @@ class $$ProductsTableTableManager
                 usages: usages,
                 expertNoteFr: expertNoteFr,
                 expertNoteEn: expertNoteEn,
+                tagsIds: tagsIds,
+                certificationsIds: certificationsIds,
                 isActive: isActive,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -5833,6 +5511,8 @@ class $$ProductsTableTableManager
                 Value<String?> usages = const Value.absent(),
                 Value<String?> expertNoteFr = const Value.absent(),
                 Value<String?> expertNoteEn = const Value.absent(),
+                Value<String?> tagsIds = const Value.absent(),
+                Value<String?> certificationsIds = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -5858,6 +5538,8 @@ class $$ProductsTableTableManager
                 usages: usages,
                 expertNoteFr: expertNoteFr,
                 expertNoteEn: expertNoteEn,
+                tagsIds: tagsIds,
+                certificationsIds: certificationsIds,
                 isActive: isActive,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -5872,20 +5554,10 @@ class $$ProductsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({
-                brandId = false,
-                category = false,
-                favoritesRefs = false,
-                productCertificationsRefs = false,
-                productTagsRefs = false,
-              }) {
+              ({brandId = false, category = false, favoritesRefs = false}) {
                 return PrefetchHooks(
                   db: db,
-                  explicitlyWatchedTables: [
-                    if (favoritesRefs) db.favorites,
-                    if (productCertificationsRefs) db.productCertifications,
-                    if (productTagsRefs) db.productTags,
-                  ],
+                  explicitlyWatchedTables: [if (favoritesRefs) db.favorites],
                   addJoins:
                       <
                         T extends TableManagerState<
@@ -5954,48 +5626,6 @@ class $$ProductsTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (productCertificationsRefs)
-                        await $_getPrefetchedData<
-                          Product,
-                          $ProductsTable,
-                          ProductCertification
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ProductsTableReferences
-                              ._productCertificationsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ProductsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).productCertificationsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.productId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (productTagsRefs)
-                        await $_getPrefetchedData<
-                          Product,
-                          $ProductsTable,
-                          ProductTag
-                        >(
-                          currentTable: table,
-                          referencedTable: $$ProductsTableReferences
-                              ._productTagsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$ProductsTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).productTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.productId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                     ];
                   },
                 );
@@ -6016,13 +5646,7 @@ typedef $$ProductsTableProcessedTableManager =
       $$ProductsTableUpdateCompanionBuilder,
       (Product, $$ProductsTableReferences),
       Product,
-      PrefetchHooks Function({
-        bool brandId,
-        bool category,
-        bool favoritesRefs,
-        bool productCertificationsRefs,
-        bool productTagsRefs,
-      })
+      PrefetchHooks Function({bool brandId, bool category, bool favoritesRefs})
     >;
 typedef $$FormLabelsTableCreateCompanionBuilder =
     FormLabelsCompanion Function({
@@ -7327,46 +6951,6 @@ typedef $$CertificationsTableUpdateCompanionBuilder =
       Value<int> rowid,
     });
 
-final class $$CertificationsTableReferences
-    extends BaseReferences<_$AppDatabase, $CertificationsTable, Certification> {
-  $$CertificationsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static MultiTypedResultKey<
-    $ProductCertificationsTable,
-    List<ProductCertification>
-  >
-  _productCertificationsRefsTable(_$AppDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.productCertifications,
-        aliasName: $_aliasNameGenerator(
-          db.certifications.id,
-          db.productCertifications.certificationId,
-        ),
-      );
-
-  $$ProductCertificationsTableProcessedTableManager
-  get productCertificationsRefs {
-    final manager =
-        $$ProductCertificationsTableTableManager(
-          $_db,
-          $_db.productCertifications,
-        ).filter(
-          (f) => f.certificationId.id.sqlEquals($_itemColumn<String>('id')!),
-        );
-
-    final cache = $_typedResult.readTableOrNull(
-      _productCertificationsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
-
 class $$CertificationsTableFilterComposer
     extends Composer<_$AppDatabase, $CertificationsTable> {
   $$CertificationsTableFilterComposer({
@@ -7395,32 +6979,6 @@ class $$CertificationsTableFilterComposer
     column: $table.logoUrl,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> productCertificationsRefs(
-    Expression<bool> Function($$ProductCertificationsTableFilterComposer f) f,
-  ) {
-    final $$ProductCertificationsTableFilterComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.productCertifications,
-          getReferencedColumn: (t) => t.certificationId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ProductCertificationsTableFilterComposer(
-                $db: $db,
-                $table: $db.productCertifications,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
 class $$CertificationsTableOrderingComposer
@@ -7473,32 +7031,6 @@ class $$CertificationsTableAnnotationComposer
 
   GeneratedColumn<String> get logoUrl =>
       $composableBuilder(column: $table.logoUrl, builder: (column) => column);
-
-  Expression<T> productCertificationsRefs<T extends Object>(
-    Expression<T> Function($$ProductCertificationsTableAnnotationComposer a) f,
-  ) {
-    final $$ProductCertificationsTableAnnotationComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.productCertifications,
-          getReferencedColumn: (t) => t.certificationId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ProductCertificationsTableAnnotationComposer(
-                $db: $db,
-                $table: $db.productCertifications,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
 class $$CertificationsTableTableManager
@@ -7512,9 +7044,12 @@ class $$CertificationsTableTableManager
           $$CertificationsTableAnnotationComposer,
           $$CertificationsTableCreateCompanionBuilder,
           $$CertificationsTableUpdateCompanionBuilder,
-          (Certification, $$CertificationsTableReferences),
+          (
+            Certification,
+            BaseReferences<_$AppDatabase, $CertificationsTable, Certification>,
+          ),
           Certification,
-          PrefetchHooks Function({bool productCertificationsRefs})
+          PrefetchHooks Function()
         > {
   $$CertificationsTableTableManager(
     _$AppDatabase db,
@@ -7558,47 +7093,9 @@ class $$CertificationsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$CertificationsTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({productCertificationsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (productCertificationsRefs) db.productCertifications,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (productCertificationsRefs)
-                    await $_getPrefetchedData<
-                      Certification,
-                      $CertificationsTable,
-                      ProductCertification
-                    >(
-                      currentTable: table,
-                      referencedTable: $$CertificationsTableReferences
-                          ._productCertificationsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$CertificationsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).productCertificationsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.certificationId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -7613,390 +7110,12 @@ typedef $$CertificationsTableProcessedTableManager =
       $$CertificationsTableAnnotationComposer,
       $$CertificationsTableCreateCompanionBuilder,
       $$CertificationsTableUpdateCompanionBuilder,
-      (Certification, $$CertificationsTableReferences),
+      (
+        Certification,
+        BaseReferences<_$AppDatabase, $CertificationsTable, Certification>,
+      ),
       Certification,
-      PrefetchHooks Function({bool productCertificationsRefs})
-    >;
-typedef $$ProductCertificationsTableCreateCompanionBuilder =
-    ProductCertificationsCompanion Function({
-      required String productId,
-      required String certificationId,
-      Value<int> rowid,
-    });
-typedef $$ProductCertificationsTableUpdateCompanionBuilder =
-    ProductCertificationsCompanion Function({
-      Value<String> productId,
-      Value<String> certificationId,
-      Value<int> rowid,
-    });
-
-final class $$ProductCertificationsTableReferences
-    extends
-        BaseReferences<
-          _$AppDatabase,
-          $ProductCertificationsTable,
-          ProductCertification
-        > {
-  $$ProductCertificationsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $ProductsTable _productIdTable(_$AppDatabase db) =>
-      db.products.createAlias(
-        $_aliasNameGenerator(
-          db.productCertifications.productId,
-          db.products.id,
-        ),
-      );
-
-  $$ProductsTableProcessedTableManager get productId {
-    final $_column = $_itemColumn<String>('product_id')!;
-
-    final manager = $$ProductsTableTableManager(
-      $_db,
-      $_db.products,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_productIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $CertificationsTable _certificationIdTable(_$AppDatabase db) =>
-      db.certifications.createAlias(
-        $_aliasNameGenerator(
-          db.productCertifications.certificationId,
-          db.certifications.id,
-        ),
-      );
-
-  $$CertificationsTableProcessedTableManager get certificationId {
-    final $_column = $_itemColumn<String>('certification_id')!;
-
-    final manager = $$CertificationsTableTableManager(
-      $_db,
-      $_db.certifications,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_certificationIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ProductCertificationsTableFilterComposer
-    extends Composer<_$AppDatabase, $ProductCertificationsTable> {
-  $$ProductCertificationsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableFilterComposer get productId {
-    final $$ProductsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableFilterComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$CertificationsTableFilterComposer get certificationId {
-    final $$CertificationsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.certificationId,
-      referencedTable: $db.certifications,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CertificationsTableFilterComposer(
-            $db: $db,
-            $table: $db.certifications,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductCertificationsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ProductCertificationsTable> {
-  $$ProductCertificationsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableOrderingComposer get productId {
-    final $$ProductsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableOrderingComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$CertificationsTableOrderingComposer get certificationId {
-    final $$CertificationsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.certificationId,
-      referencedTable: $db.certifications,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CertificationsTableOrderingComposer(
-            $db: $db,
-            $table: $db.certifications,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductCertificationsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ProductCertificationsTable> {
-  $$ProductCertificationsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableAnnotationComposer get productId {
-    final $$ProductsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$CertificationsTableAnnotationComposer get certificationId {
-    final $$CertificationsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.certificationId,
-      referencedTable: $db.certifications,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$CertificationsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.certifications,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductCertificationsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ProductCertificationsTable,
-          ProductCertification,
-          $$ProductCertificationsTableFilterComposer,
-          $$ProductCertificationsTableOrderingComposer,
-          $$ProductCertificationsTableAnnotationComposer,
-          $$ProductCertificationsTableCreateCompanionBuilder,
-          $$ProductCertificationsTableUpdateCompanionBuilder,
-          (ProductCertification, $$ProductCertificationsTableReferences),
-          ProductCertification,
-          PrefetchHooks Function({bool productId, bool certificationId})
-        > {
-  $$ProductCertificationsTableTableManager(
-    _$AppDatabase db,
-    $ProductCertificationsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ProductCertificationsTableFilterComposer(
-                $db: db,
-                $table: table,
-              ),
-          createOrderingComposer: () =>
-              $$ProductCertificationsTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
-          createComputedFieldComposer: () =>
-              $$ProductCertificationsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> productId = const Value.absent(),
-                Value<String> certificationId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ProductCertificationsCompanion(
-                productId: productId,
-                certificationId: certificationId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String productId,
-                required String certificationId,
-                Value<int> rowid = const Value.absent(),
-              }) => ProductCertificationsCompanion.insert(
-                productId: productId,
-                certificationId: certificationId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ProductCertificationsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback:
-              ({productId = false, certificationId = false}) {
-                return PrefetchHooks(
-                  db: db,
-                  explicitlyWatchedTables: [],
-                  addJoins:
-                      <
-                        T extends TableManagerState<
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic,
-                          dynamic
-                        >
-                      >(state) {
-                        if (productId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.productId,
-                                    referencedTable:
-                                        $$ProductCertificationsTableReferences
-                                            ._productIdTable(db),
-                                    referencedColumn:
-                                        $$ProductCertificationsTableReferences
-                                            ._productIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-                        if (certificationId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.certificationId,
-                                    referencedTable:
-                                        $$ProductCertificationsTableReferences
-                                            ._certificationIdTable(db),
-                                    referencedColumn:
-                                        $$ProductCertificationsTableReferences
-                                            ._certificationIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
-                        }
-
-                        return state;
-                      },
-                  getPrefetchedDataCallback: (items) async {
-                    return [];
-                  },
-                );
-              },
-        ),
-      );
-}
-
-typedef $$ProductCertificationsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ProductCertificationsTable,
-      ProductCertification,
-      $$ProductCertificationsTableFilterComposer,
-      $$ProductCertificationsTableOrderingComposer,
-      $$ProductCertificationsTableAnnotationComposer,
-      $$ProductCertificationsTableCreateCompanionBuilder,
-      $$ProductCertificationsTableUpdateCompanionBuilder,
-      (ProductCertification, $$ProductCertificationsTableReferences),
-      ProductCertification,
-      PrefetchHooks Function({bool productId, bool certificationId})
+      PrefetchHooks Function()
     >;
 typedef $$TagsTableCreateCompanionBuilder =
     TagsCompanion Function({
@@ -8012,29 +7131,6 @@ typedef $$TagsTableUpdateCompanionBuilder =
       Value<String?> labelEn,
       Value<int> rowid,
     });
-
-final class $$TagsTableReferences
-    extends BaseReferences<_$AppDatabase, $TagsTable, Tag> {
-  $$TagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$ProductTagsTable, List<ProductTag>>
-  _productTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.productTags,
-    aliasName: $_aliasNameGenerator(db.tags.id, db.productTags.tagId),
-  );
-
-  $$ProductTagsTableProcessedTableManager get productTagsRefs {
-    final manager = $$ProductTagsTableTableManager(
-      $_db,
-      $_db.productTags,
-    ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_productTagsRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-}
 
 class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
   $$TagsTableFilterComposer({
@@ -8058,31 +7154,6 @@ class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
     column: $table.labelEn,
     builder: (column) => ColumnFilters(column),
   );
-
-  Expression<bool> productTagsRefs(
-    Expression<bool> Function($$ProductTagsTableFilterComposer f) f,
-  ) {
-    final $$ProductTagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.productTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductTagsTableFilterComposer(
-            $db: $db,
-            $table: $db.productTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
@@ -8126,31 +7197,6 @@ class $$TagsTableAnnotationComposer
 
   GeneratedColumn<String> get labelEn =>
       $composableBuilder(column: $table.labelEn, builder: (column) => column);
-
-  Expression<T> productTagsRefs<T extends Object>(
-    Expression<T> Function($$ProductTagsTableAnnotationComposer a) f,
-  ) {
-    final $$ProductTagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.productTags,
-      getReferencedColumn: (t) => t.tagId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductTagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.productTags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
 }
 
 class $$TagsTableTableManager
@@ -8164,9 +7210,9 @@ class $$TagsTableTableManager
           $$TagsTableAnnotationComposer,
           $$TagsTableCreateCompanionBuilder,
           $$TagsTableUpdateCompanionBuilder,
-          (Tag, $$TagsTableReferences),
+          (Tag, BaseReferences<_$AppDatabase, $TagsTable, Tag>),
           Tag,
-          PrefetchHooks Function({bool productTagsRefs})
+          PrefetchHooks Function()
         > {
   $$TagsTableTableManager(_$AppDatabase db, $TagsTable table)
     : super(
@@ -8204,33 +7250,9 @@ class $$TagsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$TagsTableReferences(db, table, e)),
-              )
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({productTagsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (productTagsRefs) db.productTags],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (productTagsRefs)
-                    await $_getPrefetchedData<Tag, $TagsTable, ProductTag>(
-                      currentTable: table,
-                      referencedTable: $$TagsTableReferences
-                          ._productTagsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$TagsTableReferences(db, table, p0).productTagsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.tagId == item.id),
-                      typedResults: items,
-                    ),
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ),
       );
 }
@@ -8245,358 +7267,9 @@ typedef $$TagsTableProcessedTableManager =
       $$TagsTableAnnotationComposer,
       $$TagsTableCreateCompanionBuilder,
       $$TagsTableUpdateCompanionBuilder,
-      (Tag, $$TagsTableReferences),
+      (Tag, BaseReferences<_$AppDatabase, $TagsTable, Tag>),
       Tag,
-      PrefetchHooks Function({bool productTagsRefs})
-    >;
-typedef $$ProductTagsTableCreateCompanionBuilder =
-    ProductTagsCompanion Function({
-      required String productId,
-      required String tagId,
-      Value<int> rowid,
-    });
-typedef $$ProductTagsTableUpdateCompanionBuilder =
-    ProductTagsCompanion Function({
-      Value<String> productId,
-      Value<String> tagId,
-      Value<int> rowid,
-    });
-
-final class $$ProductTagsTableReferences
-    extends BaseReferences<_$AppDatabase, $ProductTagsTable, ProductTag> {
-  $$ProductTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $ProductsTable _productIdTable(_$AppDatabase db) =>
-      db.products.createAlias(
-        $_aliasNameGenerator(db.productTags.productId, db.products.id),
-      );
-
-  $$ProductsTableProcessedTableManager get productId {
-    final $_column = $_itemColumn<String>('product_id')!;
-
-    final manager = $$ProductsTableTableManager(
-      $_db,
-      $_db.products,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_productIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-
-  static $TagsTable _tagIdTable(_$AppDatabase db) => db.tags.createAlias(
-    $_aliasNameGenerator(db.productTags.tagId, db.tags.id),
-  );
-
-  $$TagsTableProcessedTableManager get tagId {
-    final $_column = $_itemColumn<String>('tag_id')!;
-
-    final manager = $$TagsTableTableManager(
-      $_db,
-      $_db.tags,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_tagIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$ProductTagsTableFilterComposer
-    extends Composer<_$AppDatabase, $ProductTagsTable> {
-  $$ProductTagsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableFilterComposer get productId {
-    final $$ProductsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableFilterComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableFilterComposer get tagId {
-    final $$TagsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableFilterComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductTagsTableOrderingComposer
-    extends Composer<_$AppDatabase, $ProductTagsTable> {
-  $$ProductTagsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableOrderingComposer get productId {
-    final $$ProductsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableOrderingComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableOrderingComposer get tagId {
-    final $$TagsTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableOrderingComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductTagsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ProductTagsTable> {
-  $$ProductTagsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  $$ProductsTableAnnotationComposer get productId {
-    final $$ProductsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.productId,
-      referencedTable: $db.products,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$ProductsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.products,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-
-  $$TagsTableAnnotationComposer get tagId {
-    final $$TagsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.tagId,
-      referencedTable: $db.tags,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TagsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.tags,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$ProductTagsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ProductTagsTable,
-          ProductTag,
-          $$ProductTagsTableFilterComposer,
-          $$ProductTagsTableOrderingComposer,
-          $$ProductTagsTableAnnotationComposer,
-          $$ProductTagsTableCreateCompanionBuilder,
-          $$ProductTagsTableUpdateCompanionBuilder,
-          (ProductTag, $$ProductTagsTableReferences),
-          ProductTag,
-          PrefetchHooks Function({bool productId, bool tagId})
-        > {
-  $$ProductTagsTableTableManager(_$AppDatabase db, $ProductTagsTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ProductTagsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ProductTagsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ProductTagsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> productId = const Value.absent(),
-                Value<String> tagId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ProductTagsCompanion(
-                productId: productId,
-                tagId: tagId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String productId,
-                required String tagId,
-                Value<int> rowid = const Value.absent(),
-              }) => ProductTagsCompanion.insert(
-                productId: productId,
-                tagId: tagId,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$ProductTagsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({productId = false, tagId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (productId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.productId,
-                                referencedTable: $$ProductTagsTableReferences
-                                    ._productIdTable(db),
-                                referencedColumn: $$ProductTagsTableReferences
-                                    ._productIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-                    if (tagId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.tagId,
-                                referencedTable: $$ProductTagsTableReferences
-                                    ._tagIdTable(db),
-                                referencedColumn: $$ProductTagsTableReferences
-                                    ._tagIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$ProductTagsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ProductTagsTable,
-      ProductTag,
-      $$ProductTagsTableFilterComposer,
-      $$ProductTagsTableOrderingComposer,
-      $$ProductTagsTableAnnotationComposer,
-      $$ProductTagsTableCreateCompanionBuilder,
-      $$ProductTagsTableUpdateCompanionBuilder,
-      (ProductTag, $$ProductTagsTableReferences),
-      ProductTag,
-      PrefetchHooks Function({bool productId, bool tagId})
+      PrefetchHooks Function()
     >;
 
 class $AppDatabaseManager {
@@ -8618,9 +7291,5 @@ class $AppDatabaseManager {
       $$FavoritesTableTableManager(_db, _db.favorites);
   $$CertificationsTableTableManager get certifications =>
       $$CertificationsTableTableManager(_db, _db.certifications);
-  $$ProductCertificationsTableTableManager get productCertifications =>
-      $$ProductCertificationsTableTableManager(_db, _db.productCertifications);
   $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
-  $$ProductTagsTableTableManager get productTags =>
-      $$ProductTagsTableTableManager(_db, _db.productTags);
 }

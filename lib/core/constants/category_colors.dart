@@ -1,4 +1,5 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 /// Category colors for product types
 class CategoryColors {
@@ -43,6 +44,40 @@ class CategoryColors {
         return const Color(0xFF0288D1); // Light Blue 700
       default:
         return herb;
+    }
+  }
+
+  /// Parse a hex color string from DB (e.g. "#RRGGBB" or "RRGGBB")
+  static Color? parseColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) return null;
+    try {
+      final hex = hexString.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Get the default icon for a category
+  static IconData iconFor(String? category) {
+    if (category == null) return LucideIcons.tag;
+    switch (category) {
+      case 'spice':
+        return LucideIcons.flame;
+      case 'essential_oil':
+        return LucideIcons.droplets;
+      case 'herb':
+        return LucideIcons.leaf;
+      case 'body_care':
+        return LucideIcons.sparkles;
+      case 'infusion':
+        return LucideIcons.coffee;
+      case 'vegetable_oil':
+        return LucideIcons.droplet;
+      case 'cleaning':
+        return LucideIcons.sprayCan;
+      default:
+        return LucideIcons.tag;
     }
   }
 }

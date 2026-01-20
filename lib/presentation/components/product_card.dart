@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/constants/category_colors.dart';
 import '../../core/providers/providers.dart';
 import '../../data/sources/local/app_database.dart' as db;
@@ -31,18 +33,51 @@ class ProductCard extends ConsumerWidget {
         : product.nameFr;
   }
 
-  Color _getCategoryColor(WidgetRef ref) {
-    final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
-    return CategoryColors.forCategory(
-      product.category,
-      dynamicColors: dynamicColors,
-    );
+  db.CategoryLabel? _getCategoryLabel(WidgetRef ref) {
+    return ref
+        .watch(categoryLabelsProvider)
+        .asData
+        ?.value
+        .firstWhere(
+          (l) => l.key == product.category,
+          orElse: () => const db.CategoryLabel(key: '', label: ''),
+        );
+  }
+
+  Color _getCategoryColor(WidgetRef ref, db.CategoryLabel? label) {
+    if (label?.color != null) {
+      final parsed = CategoryColors.parseColor(label!.color);
+      if (parsed != null) return parsed;
+    }
+    return CategoryColors.forCategory(product.category);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final categoryColor = _getCategoryColor(ref);
+    final categoryLabel = _getCategoryLabel(ref);
+    final categoryColor = _getCategoryColor(ref, categoryLabel);
+
+    // Determine icon for category fallback
+    final catIcon = CategoryColors.iconFor(product.category);
+
+    // Determine localized label
+    String categoryText = product.category ?? 'misc';
+    if (categoryLabel != null) {
+      final isFr = context.locale.languageCode == 'fr';
+      Map<String, dynamic> labelMap = {};
+      try {
+        labelMap = jsonDecode(categoryLabel.label) as Map<String, dynamic>;
+      } catch (_) {
+        labelMap = {'fr': categoryLabel.key};
+      }
+      categoryText = isFr
+          ? (labelMap['fr'] ?? categoryLabel.key)
+          : (labelMap['en'] ?? labelMap['fr'] ?? categoryLabel.key);
+    } else {
+      // Fallback if label not found in DB
+      categoryText = 'categories.${product.category ?? 'misc'}'.tr();
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -123,7 +158,7 @@ class ProductCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Category badge - top left corner (shaded color background)
+                  // Brand badge - top left corner (Neutral/Brand Color)
                   Positioned(
                     top: 12,
                     left: 12,
@@ -133,23 +168,36 @@ class ProductCard extends ConsumerWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.85),
+                        color: colorScheme.tertiaryContainer.withValues(
+                          alpha: 0.9,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: categoryColor.withValues(alpha: 0.3),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      child: Text(
-                        'categories.${product.category ?? 'misc'}'.tr(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.store,
+                            size: 12,
+                            color: colorScheme.onTertiaryContainer,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            brandName ?? 'Phael Flor',
+                            style: TextStyle(
+                              color: colorScheme.onTertiaryContainer,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -177,42 +225,115 @@ class ProductCard extends ConsumerWidget {
 
                     const SizedBox(height: 6),
 
-                    // Brand tag with icon
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(
-                          alpha: 0.6,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            LucideIcons.store,
-                            size: 12,
-                            color: colorScheme.primary,
+                    // Category tag and Hashtags
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // Category Container
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              brandName ?? 'Phael Flor',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 11,
-                                  ),
+                          decoration: BoxDecoration(
+                            color: categoryColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: categoryColor.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (categoryLabel?.iconUrl != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: SvgPicture.network(
+                                    categoryLabel!.iconUrl!,
+                                    width: 12,
+                                    height: 12,
+                                    colorFilter: ColorFilter.mode(
+                                      categoryColor,
+                                      BlendMode.srcIn,
+                                    ),
+                                    placeholderBuilder: (_) => Icon(
+                                      catIcon,
+                                      size: 12,
+                                      color: categoryColor,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Icon(
+                                    catIcon,
+                                    size: 12,
+                                    color: categoryColor,
+                                  ),
+                                ),
+                              Flexible(
+                                child: Text(
+                                  categoryText, // Use parsed text here
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: categoryColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11,
+                                      ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Hashtags (First 2)
+                        Builder(
+                          builder: (context) {
+                            if (product.tags == null) {
+                              return const SizedBox.shrink();
+                            }
+                            try {
+                              final List<dynamic> tagsList = jsonDecode(
+                                product.tags!,
+                              );
+                              final tagsToShow = tagsList.take(2).toList();
+
+                              if (tagsToShow.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: tagsToShow.map((tag) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: Text(
+                                      '#$tag',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.secondary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                            // fontStyle: FontStyle.italic,
+                                          ),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            } catch (e) {
+                              return const SizedBox.shrink();
+                            }
+                          },
+                        ),
+                      ],
                     ),
 
                     const Spacer(),
@@ -245,7 +366,6 @@ class ProductCard extends ConsumerWidget {
                           const SizedBox.shrink(),
 
                         // View button - Material 3 FilledButton style
-                        // View button - Text + Icon
                         GestureDetector(
                           onTap: onTap,
                           child: Container(

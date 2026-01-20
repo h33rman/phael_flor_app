@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
@@ -10,6 +11,7 @@ class Brands extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get logoUrl => text().nullable()();
+  TextColumn get iconUrl => text().nullable()(); // Added in v15
   TextColumn get descriptionFr => text().nullable()();
   TextColumn get descriptionEn => text().nullable()();
   DateTimeColumn get createdAt => dateTime().nullable()();
@@ -52,9 +54,13 @@ class Products extends Table {
   TextColumn get bienfaitsEn => text().nullable()(); // JSON array as string
   TextColumn get usages => text().nullable()(); // JSON array as string
 
-  // Expert Note
   TextColumn get expertNoteFr => text().nullable()();
   TextColumn get expertNoteEn => text().nullable()();
+
+  // Relations
+  TextColumn get tagsIds => text().nullable()(); // JSON List<String> of IDs
+  TextColumn get certificationsIds =>
+      text().nullable()(); // JSON List<String> of IDs
 
   // Meta
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
@@ -79,6 +85,7 @@ class FormLabels extends Table {
 class CategoryLabels extends Table {
   TextColumn get key => text()();
   TextColumn get label => text()(); // JSON
+  TextColumn get iconUrl => text().nullable()(); // Added in v15
   TextColumn get color => text().nullable()(); // Added in v11
 
   @override
@@ -115,26 +122,11 @@ class Tags extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ProductTags extends Table {
-  TextColumn get productId => text().references(Products, #id)();
-  TextColumn get tagId => text().references(Tags, #id)();
-
-  @override
-  Set<Column> get primaryKey => {productId, tagId};
-}
-
-class ProductCertifications extends Table {
-  TextColumn get productId => text().references(Products, #id)();
-  TextColumn get certificationId => text().references(Certifications, #id)();
-
-  @override
-  Set<Column> get primaryKey => {productId, certificationId};
-}
-
 // ═══════════════════════════════════════════════════════════════
 // TABLE: User Data
 // ═══════════════════════════════════════════════════════════════
 class Favorites extends Table {
+  IntColumn get id => integer().autoIncrement()();
   TextColumn get productId => text().nullable().references(Products, #id)();
   TextColumn get articleId => text().nullable().references(Articles, #id)();
 }
@@ -169,16 +161,16 @@ class Articles extends Table {
     Favorites,
     Articles,
     Certifications,
-    ProductCertifications,
     Tags,
-    ProductTags,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 12;
+  @override
+  @override
+  int get schemaVersion => 16;
 
   static QueryExecutor _openConnection() {
     return driftDatabase(name: 'phael_flor_db');
@@ -222,8 +214,8 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(tags);
         }
         if (from < 9) {
-          await m.createTable(productCertifications);
-          await m.createTable(productTags);
+          // Tables productCertifications and productTags were added here,
+          // but they are now removed in v13.
         }
         if (from < 10) {
           await m.createTable(articleCategoryLabels);
@@ -234,6 +226,29 @@ class AppDatabase extends _$AppDatabase {
         if (from < 12) {
           await m.addColumn(products, products.expertNoteFr);
           await m.addColumn(products, products.expertNoteEn);
+        }
+        if (from < 13) {
+          await m.addColumn(products, products.tagsIds);
+          await m.addColumn(products, products.certificationsIds);
+          // Drop old join tables
+          await customStatement('DROP TABLE IF EXISTS product_tags;');
+          await customStatement('DROP TABLE IF EXISTS product_certifications;');
+        }
+        if (from < 14) {
+          // Re-create CategoryLabels to ensure it has 'label' and 'color' columns
+          // Fixes "table category_labels has no column named label" error
+          await customStatement('DROP TABLE IF EXISTS category_labels;');
+          await customStatement('DROP TABLE IF EXISTS category_labels;');
+          await m.createTable(categoryLabels);
+        }
+        if (from < 15) {
+          await m.addColumn(brands, brands.iconUrl);
+          await m.addColumn(categoryLabels, categoryLabels.iconUrl);
+        }
+        if (from < 16) {
+          // Re-create Favorites table to ensure explicit ID and constraints are correct
+          await m.deleteTable(favorites.actualTableName);
+          await m.createTable(favorites);
         }
       },
     );
@@ -442,37 +457,38 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // Relations
-  Future<List<Tag>> getTagsForProduct(String productId) {
-    return (select(tags).join([
-          innerJoin(productTags, productTags.tagId.equalsExp(tags.id)),
-        ])..where(productTags.productId.equals(productId)))
-        .map((row) => row.readTable(tags))
-        .get();
+  Future<List<Tag>> getTagsForProduct(String productId) async {
+    final product = await (select(
+      products,
+    )..where((p) => p.id.equals(productId))).getSingleOrNull();
+
+    if (product?.tagsIds == null) return [];
+
+    try {
+      final ids = List<String>.from(jsonDecode(product!.tagsIds!) as List);
+      return (select(tags)..where((t) => t.id.isIn(ids))).get();
+    } catch (e) {
+      return [];
+    }
   }
 
-  Future<List<Certification>> getCertificationsForProduct(String productId) {
-    return (select(certifications).join([
-          innerJoin(
-            productCertifications,
-            productCertifications.certificationId.equalsExp(certifications.id),
-          ),
-        ])..where(productCertifications.productId.equals(productId)))
-        .map((row) => row.readTable(certifications))
-        .get();
-  }
-
-  Future<void> insertProductTags(List<ProductTagsCompanion> list) async {
-    await batch((batch) {
-      batch.insertAllOnConflictUpdate(productTags, list);
-    });
-  }
-
-  Future<void> insertProductCertifications(
-    List<ProductCertificationsCompanion> list,
+  Future<List<Certification>> getCertificationsForProduct(
+    String productId,
   ) async {
-    await batch((batch) {
-      batch.insertAllOnConflictUpdate(productCertifications, list);
-    });
+    final product = await (select(
+      products,
+    )..where((p) => p.id.equals(productId))).getSingleOrNull();
+
+    if (product?.certificationsIds == null) return [];
+
+    try {
+      final ids = List<String>.from(
+        jsonDecode(product!.certificationsIds!) as List,
+      );
+      return (select(certifications)..where((c) => c.id.isIn(ids))).get();
+    } catch (e) {
+      return [];
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════

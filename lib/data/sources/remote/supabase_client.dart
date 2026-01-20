@@ -45,7 +45,8 @@ class SupabaseDataSource {
         .from('products')
         .select()
         .eq('is_active', true)
-        .order('created_at', ascending: false);
+        .eq('is_active', true)
+        .order('updated_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -57,7 +58,7 @@ class SupabaseDataSource {
         .select()
         .eq('brand_id', brandId)
         .eq('is_active', true)
-        .order('created_at', ascending: false);
+        .order('updated_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -123,16 +124,6 @@ class SupabaseDataSource {
 
   Future<List<Map<String, dynamic>>> fetchCertifications() async {
     final response = await _client.from('certifications').select();
-    return List<Map<String, dynamic>>.from(response);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchProductTags() async {
-    final response = await _client.from('product_tags').select();
-    return List<Map<String, dynamic>>.from(response);
-  }
-
-  Future<List<Map<String, dynamic>>> fetchProductCertifications() async {
-    final response = await _client.from('product_certifications').select();
     return List<Map<String, dynamic>>.from(response);
   }
 }

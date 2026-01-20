@@ -69,6 +69,7 @@ class ProductRepository {
                     ? DateTime.parse(json['created_at'] as String)
                     : null,
               ),
+              iconUrl: Value(json['icon_url'] as String?),
             ),
           )
           .toList();
@@ -88,7 +89,20 @@ class ProductRepository {
     if (await _connectivity.hasConnection()) {
       try {
         final remoteData = await _remoteDb.fetchAllProducts();
-        return remoteData.map(_mapJsonToDbProduct).toList();
+        final tagMap = await _getKeyToValueMap(
+          _localDb.getAllTags(),
+          (t) => t.id,
+          (t) => t.labelFr,
+        );
+        final certMap = await _getKeyToValueMap(
+          _localDb.getAllCertifications(),
+          (c) => c.id,
+          (c) => c.nameFr,
+        );
+
+        return remoteData
+            .map((json) => _mapJsonToDbProduct(json, tagMap, certMap))
+            .toList();
       } catch (e) {
         debugPrint('Online fetch all products failed: $e');
         return [];
@@ -139,7 +153,20 @@ class ProductRepository {
         final remoteData = await _remoteDb.fetchAllProducts();
 
         // Map to Drift objects and Filter in Memory
-        var products = remoteData.map(_mapJsonToDbProduct).toList();
+        final tagMap = await _getKeyToValueMap(
+          _localDb.getAllTags(),
+          (t) => t.id,
+          (t) => t.labelFr,
+        );
+        final certMap = await _getKeyToValueMap(
+          _localDb.getAllCertifications(),
+          (c) => c.id,
+          (c) => c.nameFr,
+        );
+
+        var products = remoteData
+            .map((json) => _mapJsonToDbProduct(json, tagMap, certMap))
+            .toList();
 
         // 1. Search (Name/Tags)
         if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -241,78 +268,36 @@ class ProductRepository {
   Future<void> _syncProducts() async {
     try {
       final remoteProducts = await _remoteDb.fetchAllProducts();
-      final companions = remoteProducts
-          .map(
-            (json) => db.ProductsCompanion(
-              id: Value(json['id'] as String),
-              brandId: Value(json['brand_id'] as String),
-              nameFr: Value((json['name'] as Map)['fr'] as String? ?? ''),
-              nameEn: Value((json['name'] as Map)['en'] as String?),
-              certifications: Value(
-                json['certifications'] != null
-                    ? jsonEncode(json['certifications'])
-                    : null,
-              ),
-              tags: Value(
-                json['tags'] != null ? jsonEncode(json['tags']) : null,
-              ),
-              // New column mappings
-              category: Value(json['category'] as String?),
-              form: Value(json['form'] as String?),
-              scientificName: Value(json['scientific_name'] as String?),
-              weightVolume: Value(json['weight_volume'] as String?),
-              ingredients: Value(
-                json['ingredients'] != null
-                    ? jsonEncode(json['ingredients'])
-                    : null,
-              ),
-              excerptFr: Value((json['excerpt'] as Map?)?['fr'] as String?),
-              excerptEn: Value((json['excerpt'] as Map?)?['en'] as String?),
 
-              imageUrl: Value(json['image_url'] as String?),
-              galleryUrls: Value(
-                json['gallery_urls'] != null
-                    ? jsonEncode(json['gallery_urls'])
-                    : null,
-              ),
-              bienfaitsFr: Value(
-                (json['bienfaits'] as Map?)?['fr'] != null
-                    ? jsonEncode((json['bienfaits'] as Map)['fr'])
-                    : null,
-              ),
-              bienfaitsEn: Value(
-                (json['bienfaits'] as Map?)?['en'] != null
-                    ? jsonEncode((json['bienfaits'] as Map)['en'])
-                    : null,
-              ),
-              // Expert Note mappings
-              expertNoteFr: Value(
-                (json['expert_note'] as Map?)?['fr'] as String?,
-              ),
-              expertNoteEn: Value(
-                (json['expert_note'] as Map?)?['en'] as String?,
-              ),
-              usages: Value(
-                json['usages'] != null ? jsonEncode(json['usages']) : null,
-              ),
-              isActive: Value(json['is_active'] as bool? ?? true),
-              createdAt: Value(
-                json['created_at'] != null
-                    ? DateTime.parse(json['created_at'] as String)
-                    : null,
-              ),
-              updatedAt: Value(
-                json['updated_at'] != null
-                    ? DateTime.parse(json['updated_at'] as String)
-                    : null,
-              ),
-            ),
-          )
+      // Pre-fetch relation maps for name resolution
+      final tagMap = await _getKeyToValueMap(
+        _localDb.getAllTags(),
+        (t) => t.id,
+        (t) => t.labelFr,
+      );
+      final certMap = await _getKeyToValueMap(
+        _localDb.getAllCertifications(),
+        (c) => c.id,
+        (c) => c.nameFr,
+      );
+
+      final companions = remoteProducts
+          .map((json) => _mapJsonToCompanion(json, tagMap, certMap))
           .toList();
       await _localDb.insertProducts(companions);
     } catch (e) {
       debugPrint('Product sync failed: $e');
     }
+  }
+
+  // Helper to build Maps efficiently
+  Future<Map<K, V>> _getKeyToValueMap<T, K, V>(
+    Future<List<T>> futureList,
+    K Function(T) keySelector,
+    V Function(T) valueSelector,
+  ) async {
+    final list = await futureList;
+    return {for (var item in list) keySelector(item): valueSelector(item)};
   }
 
   /// Sync tags
@@ -354,36 +339,6 @@ class ProductRepository {
     }
   }
 
-  Future<void> _syncProductTags() async {
-    try {
-      final remote = await _remoteDb.fetchProductTags();
-      final companions = remote.map((json) {
-        return db.ProductTagsCompanion(
-          productId: Value(json['product_id'] as String),
-          tagId: Value(json['tag_id'] as String),
-        );
-      }).toList();
-      await _localDb.insertProductTags(companions);
-    } catch (e) {
-      debugPrint('ProductTags sync failed: $e');
-    }
-  }
-
-  Future<void> _syncProductCertifications() async {
-    try {
-      final remote = await _remoteDb.fetchProductCertifications();
-      final companions = remote.map((json) {
-        return db.ProductCertificationsCompanion(
-          productId: Value(json['product_id'] as String),
-          certificationId: Value(json['certification_id'] as String),
-        );
-      }).toList();
-      await _localDb.insertProductCertifications(companions);
-    } catch (e) {
-      debugPrint('ProductCertifications sync failed: $e');
-    }
-  }
-
   Future<List<db.Tag>> getAllTags() async {
     if (await _connectivity.hasConnection()) {
       await _syncTags();
@@ -400,10 +355,6 @@ class ProductRepository {
 
   /// Get tags specifically for a product
   Future<List<db.Tag>> getTagsForProduct(String productId) async {
-    // Opportunistic sync of relationships
-    if (await _connectivity.hasConnection()) {
-      _syncProductTags();
-    }
     return _localDb.getTagsForProduct(productId);
   }
 
@@ -411,9 +362,6 @@ class ProductRepository {
   Future<List<db.Certification>> getCertificationsForProduct(
     String productId,
   ) async {
-    if (await _connectivity.hasConnection()) {
-      _syncProductCertifications();
-    }
     return _localDb.getCertificationsForProduct(productId);
   }
 
@@ -441,6 +389,7 @@ class ProductRepository {
           key: Value(json['key'] as String),
           label: Value(jsonEncode(labelMap)),
           color: Value(json['color'] as String?),
+          iconUrl: Value(json['icon_url'] as String?),
         );
       }).toList();
       await _localDb.insertCategoryLabels(companions);
@@ -474,16 +423,14 @@ class ProductRepository {
       await _syncFormLabels();
       await _syncArticleCategoryLabels();
 
+      // Relations First (for Name Resolution)
+      await _syncTags();
+      await _syncCertifications();
+
       // Core Data
       await _syncBrands();
       await _syncProducts();
       await _syncArticles();
-
-      // Relations
-      await _syncTags();
-      await _syncCertifications();
-      await _syncProductTags();
-      await _syncProductCertifications();
     }
   }
 
@@ -587,23 +534,113 @@ class ProductRepository {
 
   /// Toggle favorite status
   Future<void> toggleFavorite(String productId) async {
-    // Ensure product exists in local DB before favoriting (FK Constraint)
-    final existing = await _localDb.getProductById(productId);
-    if (existing == null) {
-      if (await _connectivity.hasConnection()) {
-        final remoteJson = await _remoteDb.fetchProductById(productId);
-        if (remoteJson != null) {
-          // Convert JSON to Companion
-          final companion = _mapJsonToCompanion(remoteJson);
-          await _localDb.insertOrUpdateProduct(companion);
+    debugPrint('Toggling favorite for $productId');
+    try {
+      // Ensure product exists in local DB before favoriting (FK Constraint)
+      final existing = await _localDb.getProductById(productId);
+      if (existing == null) {
+        debugPrint('Product $productId not in local DB. Fetching...');
+        if (await _connectivity.hasConnection()) {
+          final remoteJson = await _remoteDb.fetchProductById(productId);
+          if (remoteJson != null) {
+            debugPrint('Remote product found. Inserting...');
+
+            // 1. Ensure Brand exists (FK Constraint)
+            final brandId = remoteJson['brand_id'] as String;
+            final existingBrand = await _localDb.getBrandById(
+              brandId,
+            ); // Ensure this method exists and is public
+            if (existingBrand == null) {
+              debugPrint('Brand $brandId not found locally. Fetching...');
+              try {
+                final brandJson = await _remoteDb.fetchBrandById(brandId);
+                if (brandJson != null) {
+                  final brandCompanion = db.BrandsCompanion(
+                    id: Value(brandJson['id'] as String),
+                    name: Value(brandJson['name'] as String),
+                    logoUrl: Value(brandJson['logo_url'] as String?),
+                    iconUrl: Value(brandJson['icon_url'] as String?),
+                    descriptionFr: Value(
+                      (brandJson['description'] as Map?)?['fr'] as String?,
+                    ),
+                    descriptionEn: Value(
+                      (brandJson['description'] as Map?)?['en'] as String?,
+                    ),
+                    createdAt: Value(
+                      brandJson['created_at'] != null
+                          ? DateTime.parse(brandJson['created_at'] as String)
+                          : null,
+                    ),
+                  );
+                  await _localDb.insertOrUpdateBrand(
+                    brandCompanion,
+                  ); // Ensure this method exists
+                  debugPrint('Brand inserted.');
+                } else {
+                  debugPrint('Brand $brandId not found on remote!');
+                  // Proceeding might fail if brand FK is strict
+                }
+              } catch (e) {
+                debugPrint('Error fetching/inserting brand: $e');
+              }
+            }
+
+            // Fetch maps specifically for this single product fallback
+            final tagMap = await _getKeyToValueMap(
+              _localDb.getAllTags(),
+              (t) => t.id,
+              (t) => t.labelFr,
+            );
+            final certMap = await _getKeyToValueMap(
+              _localDb.getAllCertifications(),
+              (c) => c.id,
+              (c) => c.nameFr,
+            );
+
+            // Convert JSON to Companion
+            final companion = _mapJsonToCompanion(remoteJson, tagMap, certMap);
+            await _localDb.insertOrUpdateProduct(companion);
+            debugPrint('Product inserted successfully.');
+          } else {
+            debugPrint('Remote product not found!');
+          }
+        } else {
+          debugPrint('No connection to fetch product details.');
         }
+      } else {
+        debugPrint('Product already exists locally.');
       }
+      await _localDb.toggleProductFavorite(productId);
+      debugPrint('Favorite toggled in DB.');
+    } catch (e, stack) {
+      debugPrint('Error toggling favorite: $e\n$stack');
     }
-    await _localDb.toggleProductFavorite(productId);
   }
 
   // Helper: JSON -> DB Product
-  db.Product _mapJsonToDbProduct(Map<String, dynamic> json) {
+  db.Product _mapJsonToDbProduct(
+    Map<String, dynamic> json,
+    Map<String, String> tagMap,
+    Map<String, String> certMap,
+  ) {
+    // Resolve Arrays
+    final tagsIds = json['tags_ids'] != null
+        ? List<String>.from(json['tags_ids'])
+        : <String>[];
+    final certsIds = json['certifications_ids'] != null
+        ? List<String>.from(json['certifications_ids'])
+        : <String>[];
+
+    // Resolve Names
+    final tagNames = tagsIds
+        .map((id) => tagMap[id] ?? '')
+        .where((n) => n.isNotEmpty)
+        .toList();
+    final certNames = certsIds
+        .map((id) => certMap[id] ?? '')
+        .where((n) => n.isNotEmpty)
+        .toList();
+
     return db.Product(
       id: json['id'] as String,
       brandId: json['brand_id'] as String,
@@ -616,10 +653,10 @@ class ProductRepository {
       ingredients: json['ingredients'] != null
           ? jsonEncode(json['ingredients'])
           : null,
-      certifications: json['certifications'] != null
-          ? jsonEncode(json['certifications'])
-          : null,
-      tags: json['tags'] != null ? jsonEncode(json['tags']) : null,
+      certifications: jsonEncode(certNames),
+      certificationsIds: jsonEncode(certsIds),
+      tags: jsonEncode(tagNames),
+      tagsIds: jsonEncode(tagsIds),
       imageUrl: json['image_url'] as String?,
       galleryUrls: json['gallery_urls'] != null
           ? jsonEncode(json['gallery_urls'])
@@ -646,7 +683,29 @@ class ProductRepository {
   }
 
   // Helper: JSON -> Companion
-  db.ProductsCompanion _mapJsonToCompanion(Map<String, dynamic> json) {
+  db.ProductsCompanion _mapJsonToCompanion(
+    Map<String, dynamic> json,
+    Map<String, String> tagMap,
+    Map<String, String> certMap,
+  ) {
+    // Resolve Arrays
+    final tagsIds = json['tags_ids'] != null
+        ? List<String>.from(json['tags_ids'])
+        : <String>[];
+    final certsIds = json['certifications_ids'] != null
+        ? List<String>.from(json['certifications_ids'])
+        : <String>[];
+
+    // Resolve Names
+    final tagNames = tagsIds
+        .map((id) => tagMap[id] ?? '')
+        .where((n) => n.isNotEmpty)
+        .toList();
+    final certNames = certsIds
+        .map((id) => certMap[id] ?? '')
+        .where((n) => n.isNotEmpty)
+        .toList();
+
     return db.ProductsCompanion(
       id: Value(json['id'] as String),
       brandId: Value(json['brand_id'] as String),
@@ -659,12 +718,10 @@ class ProductRepository {
       ingredients: Value(
         json['ingredients'] != null ? jsonEncode(json['ingredients']) : null,
       ),
-      certifications: Value(
-        json['certifications'] != null
-            ? jsonEncode(json['certifications'])
-            : null,
-      ),
-      tags: Value(json['tags'] != null ? jsonEncode(json['tags']) : null),
+      certifications: Value(jsonEncode(certNames)),
+      certificationsIds: Value(jsonEncode(certsIds)),
+      tags: Value(jsonEncode(tagNames)),
+      tagsIds: Value(jsonEncode(tagsIds)),
       imageUrl: Value(json['image_url'] as String?),
       galleryUrls: Value(
         json['gallery_urls'] != null ? jsonEncode(json['gallery_urls']) : null,
