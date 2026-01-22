@@ -16,8 +16,11 @@ class Product {
   name; // {"fr": "Basilic Bio", "en": "Organic Basil"}
   final String? scientificName;
   final ProductForm? form;
-  final ProductCategory? category;
-  final String? weightVolume;
+  final String? formSlug; // Keep internal reference if needed
+  final String categorySlug;
+  final String? weightVolume; // Combined for legacy/simple display
+  final String? weight;
+  final String? volume;
   final List<String>? ingredients;
   final List<String>? certifications;
 
@@ -36,6 +39,7 @@ class Product {
   // SECTION 3: Usage (Accordion)
   // ═══════════════════════════════════════════════════════════════
   final List<UsageSection>? usages;
+  final Map<String, String>? excerpt; // {"fr": "Short summary", "en": "..."}
 
   // Meta
   final bool isActive;
@@ -46,10 +50,13 @@ class Product {
     required this.id,
     required this.brandId,
     required this.name,
+    required this.categorySlug,
     this.scientificName,
     this.form,
-    this.category,
+    this.formSlug,
     this.weightVolume,
+    this.weight,
+    this.volume,
     this.ingredients,
     this.certifications,
     this.imageUrl,
@@ -57,6 +64,7 @@ class Product {
     this.tags,
     this.bienfaits,
     this.usages,
+    this.excerpt,
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
@@ -80,8 +88,11 @@ class Product {
       name: Map<String, String>.from(json['name'] as Map),
       scientificName: json['scientific_name'] as String?,
       form: ProductForm.fromString(json['form'] as String?),
-      category: ProductCategory.fromString(json['category'] as String?),
+      formSlug: json['form'] as String?,
+      categorySlug: json['category'] as String? ?? 'unknown',
       weightVolume: json['weight_volume'] as String?,
+      weight: json['weight'] as String?,
+      volume: json['volume'] as String?,
       ingredients: json['ingredients'] != null
           ? List<String>.from(json['ingredients'] as List)
           : null,
@@ -105,6 +116,9 @@ class Product {
                 .map((e) => UsageSection.fromJson(e as Map<String, dynamic>))
                 .toList()
           : null,
+      excerpt: json['excerpt'] != null
+          ? Map<String, String>.from(json['excerpt'] as Map)
+          : null,
       isActive: json['is_active'] as bool? ?? true,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -122,8 +136,10 @@ class Product {
       'name': name,
       'scientific_name': scientificName,
       'form': form?.labelKey,
-      'category': category?.labelKey,
+      'category': categorySlug,
       'weight_volume': weightVolume,
+      'weight': weight,
+      'volume': volume,
       'ingredients': ingredients,
       'certifications': certifications,
       'image_url': imageUrl,
@@ -131,6 +147,7 @@ class Product {
       'tags': tags,
       'bienfaits': bienfaits,
       'usages': usages?.map((e) => e.toJson()).toList(),
+      'excerpt': excerpt,
       'is_active': isActive,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -143,8 +160,11 @@ class Product {
     Map<String, String>? name,
     String? scientificName,
     ProductForm? form,
-    ProductCategory? category,
+    String? formSlug,
+    String? categorySlug,
     String? weightVolume,
+    String? weight,
+    String? volume,
     List<String>? ingredients,
     List<String>? certifications,
     String? imageUrl,
@@ -152,6 +172,7 @@ class Product {
     List<String>? tags,
     Map<String, List<String>>? bienfaits,
     List<UsageSection>? usages,
+    Map<String, String>? excerpt,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -162,8 +183,11 @@ class Product {
       name: name ?? this.name,
       scientificName: scientificName ?? this.scientificName,
       form: form ?? this.form,
-      category: category ?? this.category,
+      formSlug: formSlug ?? this.formSlug,
+      categorySlug: categorySlug ?? this.categorySlug,
       weightVolume: weightVolume ?? this.weightVolume,
+      weight: weight ?? this.weight,
+      volume: volume ?? this.volume,
       ingredients: ingredients ?? this.ingredients,
       certifications: certifications ?? this.certifications,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -171,6 +195,7 @@ class Product {
       tags: tags ?? this.tags,
       bienfaits: bienfaits ?? this.bienfaits,
       usages: usages ?? this.usages,
+      excerpt: excerpt ?? this.excerpt,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

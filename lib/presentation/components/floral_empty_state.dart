@@ -7,12 +7,14 @@ class FloralEmptyState extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final String? buttonText;
+  final VoidCallback? onPressed;
 
   const FloralEmptyState({
     super.key,
     this.title,
     this.subtitle,
     this.buttonText,
+    this.onPressed,
   });
 
   @override
@@ -71,7 +73,7 @@ class FloralEmptyState extends StatelessWidget {
 
             // Action Button
             FilledButton.icon(
-              onPressed: () => context.go('/home'),
+              onPressed: onPressed ?? () => context.go('/home'),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 32,

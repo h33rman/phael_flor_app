@@ -45,7 +45,6 @@ class SupabaseDataSource {
         .from('products')
         .select()
         .eq('is_active', true)
-        .eq('is_active', true)
         .order('updated_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
@@ -77,7 +76,7 @@ class SupabaseDataSource {
         .from('products')
         .select()
         .or(
-          "name->>'fr'.ilike.%$query%,name->>'en'.ilike.%$query%,scientific_name.ilike.%$query%",
+          "name_fr.ilike.%$query%,name_en.ilike.%$query%,scientific_name.ilike.%$query%",
         )
         .eq('is_active', true)
         .limit(50);
@@ -85,15 +84,15 @@ class SupabaseDataSource {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // LABELS (Form & Category)
+  // LOOKUPS (Categories & Forms)
   // ═══════════════════════════════════════════════════════════════
-  Future<List<Map<String, dynamic>>> fetchFormLabels() async {
-    final response = await _client.from('form_labels').select();
+  Future<List<Map<String, dynamic>>> fetchForms() async {
+    final response = await _client.from('forms').select();
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<List<Map<String, dynamic>>> fetchCategoryLabels() async {
-    final response = await _client.from('category_labels').select();
+  Future<List<Map<String, dynamic>>> fetchCategories() async {
+    final response = await _client.from('categories').select();
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -109,13 +108,8 @@ class SupabaseDataSource {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<List<Map<String, dynamic>>> fetchArticleCategoryLabels() async {
-    final response = await _client.from('article_category_labels').select();
-    return List<Map<String, dynamic>>.from(response);
-  }
-
   // ═══════════════════════════════════════════════════════════════
-  // TAGS & CERTIFICATIONS
+  // TAGS & CERTIFICATIONS & RELATIONS
   // ═══════════════════════════════════════════════════════════════
   Future<List<Map<String, dynamic>>> fetchTags() async {
     final response = await _client.from('tags').select();
@@ -124,6 +118,16 @@ class SupabaseDataSource {
 
   Future<List<Map<String, dynamic>>> fetchCertifications() async {
     final response = await _client.from('certifications').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchProductTags() async {
+    final response = await _client.from('product_tags').select();
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchProductCertifications() async {
+    final response = await _client.from('product_certifications').select();
     return List<Map<String, dynamic>>.from(response);
   }
 }

@@ -35,7 +35,10 @@ enum ProductCategory {
   aromatherapy,
   cooking,
   cleaning,
-  vegetableOil;
+  vegetableOil,
+  cosmetics,
+  extracts,
+  superfoods;
 
   String get labelKey {
     switch (this) {
@@ -52,13 +55,18 @@ enum ProductCategory {
 
   static ProductCategory? fromString(String? value) {
     if (value == null) return null;
-    final normalized = value.replaceAll('_', '');
-    return ProductCategory.values
-        .where(
-          (e) =>
-              e.name.toLowerCase() == normalized.toLowerCase() ||
-              e.labelKey == value,
-        )
-        .firstOrNull;
+
+    return ProductCategory.values.where((e) {
+      final name = e.name.toLowerCase();
+      final key = e.labelKey.toLowerCase();
+      final input = value.toLowerCase();
+      // Check exact match, label match, or singular/plural match
+      return name == input ||
+          key == input ||
+          name == input.replaceAll('_', '') ||
+          // Handle plural 's' at end of input (e.g. oils -> oil)
+          name == input.replaceAll(RegExp(r's$'), '') ||
+          key == input.replaceAll(RegExp(r's$'), '');
+    }).firstOrNull;
   }
 }

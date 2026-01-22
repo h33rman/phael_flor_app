@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,9 +5,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-import '../../core/constants/category_colors.dart';
+import '../../core/utils/color_utils.dart';
 import '../../core/providers/providers.dart';
-import '../../data/sources/local/app_database.dart' as db;
+import '../../data/models/models.dart' as models;
+
 import '../components/components.dart';
 
 /// Product detail screen with 3 tabs
@@ -37,7 +37,7 @@ class ProductDetailScreen extends ConsumerWidget {
 }
 
 class _ProductDetailBody extends ConsumerStatefulWidget {
-  final db.Product product;
+  final models.Product product;
 
   const _ProductDetailBody({required this.product});
 
@@ -50,30 +50,26 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
 
   String _getProductName(BuildContext context) {
     final locale = context.locale.languageCode;
-    return locale == 'en' && widget.product.nameEn != null
-        ? widget.product.nameEn!
-        : widget.product.nameFr;
+    return widget.product.name[locale] ??
+        widget.product.name['en'] ??
+        widget.product.name['fr'] ??
+        '';
   }
 
   String? _getExcerpt(BuildContext context) {
     final locale = context.locale.languageCode;
-    return locale == 'en' ? widget.product.excerptEn : widget.product.excerptFr;
+    return widget.product.excerpt?[locale] ??
+        widget.product.excerpt?['en'] ??
+        widget.product.excerpt?['fr'];
   }
 
   String? _getExpertNote(BuildContext context) {
-    final locale = context.locale.languageCode;
-    return locale == 'en'
-        ? widget.product.expertNoteEn
-        : widget.product.expertNoteFr;
+    // Expert note logic if reintroduced in model
+    return null;
   }
 
   List<String> _getGalleryUrls() {
-    if (widget.product.galleryUrls == null) return [];
-    try {
-      return List<String>.from(jsonDecode(widget.product.galleryUrls!));
-    } catch (_) {
-      return [];
-    }
+    return widget.product.galleryUrls ?? [];
   }
 
   @override
@@ -84,21 +80,15 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
         favoriteIdsAsync.asData?.value.contains(widget.product.id) ?? false;
 
     final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
-    // Use dynamic category color if available, else standard fallback logic
-    final categoryColor = CategoryColors.forCategory(
-      widget.product.category,
-      dynamicColors: dynamicColors,
-    );
+    final categorySlug = widget.product.categorySlug;
+    final categoryColor =
+        dynamicColors?[categorySlug] ??
+        ColorUtils.parseHex(null, fallback: colorScheme.primary);
 
-    // For the detail screen, we might want to use the category color more prominently
-    // or stick to the existing primary color design.
-    // The current code uses colorScheme.primary for general accents.
-    // Use dynamic category color for harmony
     final primaryColor = categoryColor;
     final containerColor = categoryColor.withValues(alpha: 0.2);
 
     final gallery = _getGalleryUrls();
-    // If gallery is empty but we have a main image, treat it as a gallery of 1
     final images = gallery.isNotEmpty
         ? gallery
         : (widget.product.imageUrl != null ? [widget.product.imageUrl!] : []);
@@ -109,7 +99,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
         child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverAppBar(
-              expandedHeight: 320, // Taller for gallery
+              expandedHeight: 320,
               pinned: true,
               backgroundColor: containerColor,
               flexibleSpace: FlexibleSpaceBar(
@@ -156,7 +146,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                     // Page Indicators
                     if (images.length > 1)
                       Positioned(
-                        bottom: 32, // Above the rounded bottom container
+                        bottom: 32,
                         left: 0,
                         right: 0,
                         child: Row(
@@ -183,7 +173,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                     Container(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        height: 24, // Reduced height overlap
+                        height: 24,
                         decoration: BoxDecoration(
                           color: colorScheme.surface,
                           borderRadius: const BorderRadius.vertical(
@@ -234,7 +224,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                     color: colorScheme.onSurface,
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content: Text('Share functionality coming soon!'),
                         ),
                       );
@@ -251,7 +241,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.product.category != null)
+                    if (widget.product.categorySlug.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -262,8 +252,7 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          'categories.${widget.product.category ?? 'misc'}'
-                              .tr(),
+                          'categories.$categorySlug'.tr(),
                           style: TextStyle(
                             color: colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
@@ -277,7 +266,6 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    // Excerpt
                     if (_getExcerpt(context) != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -317,7 +305,6 @@ class _ProductDetailBodyState extends ConsumerState<_ProductDetailBody> {
                         ],
                       ),
                     ],
-                    // Expert Note
                     if (_getExpertNote(context) != null) ...[
                       const SizedBox(height: 16),
                       _ExpertNoteCard(
@@ -380,26 +367,17 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class _CharacteristicsTab extends ConsumerWidget {
-  final db.Product product;
+  final models.Product product;
   final Color categoryColor;
   const _CharacteristicsTab({
     required this.product,
     required this.categoryColor,
   });
 
-  List<String> _parse(String? json) {
-    if (json == null) return [];
-    try {
-      return List<String>.from(jsonDecode(json));
-    } catch (_) {
-      return [];
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final ingredients = _parse(product.ingredients);
+    final ingredients = product.ingredients ?? [];
 
     // Fetch certifications for this product
     final certsAsync = ref.watch(productCertificationsProvider(product.id));
@@ -418,7 +396,7 @@ class _CharacteristicsTab extends ConsumerWidget {
           _InfoCard(
             icon: LucideIcons.box,
             title: 'product.tabs.characteristics'.tr(),
-            content: product.form!,
+            content: product.form.toString().split('.').last, // Enum to String
           ),
           const SizedBox(height: 16),
         ],
@@ -516,20 +494,12 @@ class _CharacteristicsTab extends ConsumerWidget {
 }
 
 class _AboutTab extends ConsumerWidget {
-  final db.Product product;
+  final models.Product product;
   const _AboutTab({required this.product});
 
   List<String> _getBienfaits(BuildContext context) {
     final locale = context.locale.languageCode;
-    try {
-      if (locale == 'en' && product.bienfaitsEn != null) {
-        return List<String>.from(jsonDecode(product.bienfaitsEn!));
-      }
-      if (product.bienfaitsFr != null) {
-        return List<String>.from(jsonDecode(product.bienfaitsFr!));
-      }
-    } catch (_) {}
-    return [];
+    return product.bienfaits?[locale] ?? product.bienfaits?['en'] ?? [];
   }
 
   @override
@@ -596,9 +566,9 @@ class _AboutTab extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: tags.map((t) {
-              final label = locale == 'en' && t.labelEn != null
-                  ? t.labelEn!
-                  : t.labelFr;
+              final label = locale == 'en' && t.nameEn != null
+                  ? t.nameEn!
+                  : t.nameFr;
               return Chip(
                 label: Text(label),
                 backgroundColor: colorScheme.secondaryContainer,
@@ -616,17 +586,12 @@ class _AboutTab extends ConsumerWidget {
 }
 
 class _UsageTab extends StatelessWidget {
-  final db.Product product;
+  final models.Product product;
   final Color categoryColor;
   const _UsageTab({required this.product, required this.categoryColor});
 
-  List<Map<String, dynamic>> _parseUsages() {
-    if (product.usages == null) return [];
-    try {
-      return List<Map<String, dynamic>>.from(jsonDecode(product.usages!));
-    } catch (_) {
-      return [];
-    }
+  List<models.UsageSection> _parseUsages() {
+    return product.usages ?? [];
   }
 
   @override
@@ -639,26 +604,10 @@ class _UsageTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: usages.map((u) {
-        final title = u['title'] as String? ?? '';
-        final content = u['content'] as String? ?? '';
-        final icon = u['icon'] as String? ?? 'info';
-        IconData iconData;
-        switch (icon) {
-          case 'kitchen':
-            iconData = LucideIcons.chefHat;
-            break;
-          case 'medical':
-            iconData = LucideIcons.heartPulse;
-            break;
-          case 'beauty':
-            iconData = LucideIcons.sparkles;
-            break;
-          case 'warning':
-            iconData = LucideIcons.alertTriangle;
-            break;
-          default:
-            iconData = LucideIcons.lightbulb;
-        }
+        final locale = context.locale.languageCode;
+        final title = u.getLocalizedTitle(locale);
+        final content = u.getLocalizedContent(locale);
+        const IconData iconData = LucideIcons.lightbulb;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -815,33 +764,26 @@ class _SimilarProductsSection extends ConsumerWidget {
     return similarAsync.when(
       data: (products) {
         if (products.isEmpty) return const SizedBox.shrink();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Vous aimerez aussi", // TODO: Localize
+              'product.similar_products'.tr(),
               style: Theme.of(
                 context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             SizedBox(
-              height: 280, // Height for compact cards
-              child: ListView.separated(
+              height: 240,
+              child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: products.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
-                  final product = products[index];
-                  return SizedBox(
-                    width: 160,
-                    child: ProductCardCompact(
-                      product: product,
-                      onTap: () {
-                        // Push new detail screen
-                        context.push('/product/${product.id}');
-                      },
-                    ),
+                  return ProductCardCompact(
+                    product: products[index],
+                    onTap: () => context.push('/product/${products[index].id}'),
                   );
                 },
               ),

@@ -63,19 +63,7 @@
         "usage_tips": "Usage tips"
     },
     "forms": {
-        "powder": "Powder",
-        "liquid": "Liquid",
-        "leaf": "Leaf",
-        "bark": "Bark",
-        "stick": "Stick",
-        "seed": "Seed",
-        "root": "Root",
-        "flower": "Flower",
-        "gel": "Gel",
-        "oil": "Oil",
-        "paste": "Paste",
-        "whole": "Whole",
-        "bean": "Pod / Bean"
+        "unknown": "Other"
     },
     "categories": {
         "essential_oil": "Essential Oil",
@@ -90,7 +78,11 @@
         "cooking": "Cooking",
         "cleaning": "Cleaning",
         "vegetable_oil": "Vegetable Oil",
-        "misc": "General"
+        "cosmetics": "Cosmetics",
+        "extracts": "Extracts",
+        "superfoods": "Superfoods",
+        "misc": "General",
+        "unknown": "Other"
     },
     "journal": {
         "title": "Journal",

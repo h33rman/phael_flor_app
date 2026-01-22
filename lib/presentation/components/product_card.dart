@@ -1,17 +1,18 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../core/constants/category_colors.dart';
+import '../../core/utils/color_utils.dart';
 import '../../core/providers/providers.dart';
-import '../../data/sources/local/app_database.dart' as db;
+import '../../data/models/models.dart' as models;
+import '../../data/sources/local/app_database.dart'
+    as db; // Keep for CategoryLabel/Tag types if needed distinct from Model
 
 /// Elegant product card with rounded image, favorite button, and view action
 class ProductCard extends ConsumerWidget {
-  final db.Product product;
+  final models.Product product;
   final String? brandName; // Pass brand name directly
   final VoidCallback? onTap;
   final VoidCallback? onFavoriteToggle;
@@ -27,56 +28,56 @@ class ProductCard extends ConsumerWidget {
   });
 
   String _getLocalizedName(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    return locale == 'en' && product.nameEn != null
-        ? product.nameEn!
-        : product.nameFr;
+    // Helper available in models.Product?
+    final locale = context.locale.languageCode;
+    return product.name[locale] ??
+        product.name['en'] ??
+        product.name['fr'] ??
+        '';
   }
 
-  db.CategoryLabel? _getCategoryLabel(WidgetRef ref) {
+  db.Category? _getCategoryLabel(WidgetRef ref) {
+    if (product.categorySlug.isEmpty) return null;
+    final slug = product.categorySlug;
     return ref
-        .watch(categoryLabelsProvider)
+        .watch(categoriesProvider)
         .asData
         ?.value
         .firstWhere(
-          (l) => l.key == product.category,
-          orElse: () => const db.CategoryLabel(key: '', label: ''),
+          (c) => c.slug == slug,
+          orElse: () => db.Category(
+            slug: slug,
+            nameFr: slug,
+            color: null,
+            iconUrl: null,
+            nameEn: null,
+          ),
         );
   }
 
-  Color _getCategoryColor(WidgetRef ref, db.CategoryLabel? label) {
-    if (label?.color != null) {
-      final parsed = CategoryColors.parseColor(label!.color);
-      if (parsed != null) return parsed;
-    }
-    return CategoryColors.forCategory(product.category);
+  Color _getCategoryColor(WidgetRef ref, db.Category? category) {
+    return ColorUtils.parseHex(category?.color);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final categoryLabel = _getCategoryLabel(ref);
-    final categoryColor = _getCategoryColor(ref, categoryLabel);
+    final categoryData = _getCategoryLabel(ref);
+    final categoryColor = _getCategoryColor(ref, categoryData);
 
+    final catSlug = product.categorySlug;
     // Determine icon for category fallback
-    final catIcon = CategoryColors.iconFor(product.category);
+    const catIcon = LucideIcons.sprout;
 
     // Determine localized label
-    String categoryText = product.category ?? 'misc';
-    if (categoryLabel != null) {
-      final isFr = context.locale.languageCode == 'fr';
-      Map<String, dynamic> labelMap = {};
-      try {
-        labelMap = jsonDecode(categoryLabel.label) as Map<String, dynamic>;
-      } catch (_) {
-        labelMap = {'fr': categoryLabel.key};
-      }
-      categoryText = isFr
-          ? (labelMap['fr'] ?? categoryLabel.key)
-          : (labelMap['en'] ?? labelMap['fr'] ?? categoryLabel.key);
+    String categoryText = catSlug;
+    if (categoryData != null) {
+      final locale = context.locale.languageCode;
+      categoryText = (locale == 'en' && categoryData.nameEn != null)
+          ? categoryData.nameEn!
+          : categoryData.nameFr;
     } else {
-      // Fallback if label not found in DB
-      categoryText = 'categories.${product.category ?? 'misc'}'.tr();
+      categoryText = 'categories.$catSlug'.tr();
     }
 
     return GestureDetector(
@@ -84,12 +85,12 @@ class ProductCard extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -98,7 +99,7 @@ class ProductCard extends ConsumerWidget {
           children: [
             // Image section with favorite button
             Expanded(
-              flex: 3,
+              flex: 10,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -207,23 +208,24 @@ class ProductCard extends ConsumerWidget {
 
             // Content section
             Expanded(
-              flex: 2,
+              flex: 10,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Product name
                     Text(
                       _getLocalizedName(context),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        height: 1.1,
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
 
                     // Category tag and Hashtags
                     Wrap(
@@ -248,11 +250,11 @@ class ProductCard extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (categoryLabel?.iconUrl != null)
+                              if (categoryData?.iconUrl != null)
                                 Padding(
                                   padding: const EdgeInsets.only(right: 4),
                                   child: SvgPicture.network(
-                                    categoryLabel!.iconUrl!,
+                                    categoryData!.iconUrl!,
                                     width: 12,
                                     height: 12,
                                     colorFilter: ColorFilter.mode(
@@ -291,114 +293,21 @@ class ProductCard extends ConsumerWidget {
                             ],
                           ),
                         ),
-
-                        // Hashtags (First 2)
-                        Builder(
-                          builder: (context) {
-                            if (product.tags == null) {
-                              return const SizedBox.shrink();
-                            }
-                            try {
-                              final List<dynamic> tagsList = jsonDecode(
-                                product.tags!,
-                              );
-                              final tagsToShow = tagsList.take(2).toList();
-
-                              if (tagsToShow.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: tagsToShow.map((tag) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: Text(
-                                      '#$tag',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.secondary,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                            // fontStyle: FontStyle.italic,
-                                          ),
-                                    ),
-                                  );
-                                }).toList(),
-                              );
-                            } catch (e) {
-                              return const SizedBox.shrink();
-                            }
-                          },
-                        ),
                       ],
                     ),
 
-                    const Spacer(),
+                    const SizedBox(height: 14),
 
-                    // Bottom row: Weight + View button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Weight/Volume with package icon
-                        if (product.weightVolume != null)
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.package,
-                                size: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                product.weightVolume!,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          )
-                        else
-                          const SizedBox.shrink(),
-
-                        // View button - Material 3 FilledButton style
-                        GestureDetector(
-                          onTap: onTap,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'common.view'.tr(),
-                                  style: TextStyle(
-                                    color: colorScheme.onPrimary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  LucideIcons.arrowRight,
-                                  size: 14,
-                                  color: colorScheme.onPrimary,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Bottom row: Weight and Volume (Text only)
+                    Text(
+                      [
+                        if (product.weight != null) product.weight,
+                        if (product.volume != null) product.volume,
+                      ].join('  •  '),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -423,7 +332,7 @@ class ProductCard extends ConsumerWidget {
 
 /// Compact version for horizontal lists
 class ProductCardCompact extends ConsumerWidget {
-  final db.Product product;
+  final models.Product product;
   final String? brandName;
   final VoidCallback? onTap;
   final double width;
@@ -437,18 +346,18 @@ class ProductCardCompact extends ConsumerWidget {
   });
 
   String _getLocalizedName(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    return locale == 'en' && product.nameEn != null
-        ? product.nameEn!
-        : product.nameFr;
+    final locale = context.locale.languageCode;
+    return product.name[locale] ??
+        product.name['en'] ??
+        product.name['fr'] ??
+        '';
   }
 
   Color _getCategoryColor(WidgetRef ref) {
     final dynamicColors = ref.watch(categoryColorsProvider).asData?.value;
-    return CategoryColors.forCategory(
-      product.category,
-      dynamicColors: dynamicColors,
-    );
+    final slug = product.categorySlug;
+    return dynamicColors?[slug] ??
+        ColorUtils.parseHex(null); // Fallback to grey
   }
 
   @override

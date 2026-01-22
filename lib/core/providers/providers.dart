@@ -5,8 +5,10 @@ import 'package:phael_flor_app/data/sources/remote/supabase_client.dart';
 import 'package:phael_flor_app/data/repositories/product_repository.dart';
 import 'package:phael_flor_app/data/repositories/article_repository.dart';
 import 'package:phael_flor_app/core/utils/connectivity_helper.dart';
+import 'package:phael_flor_app/core/utils/color_utils.dart';
 import 'package:phael_flor_app/data/models/enums.dart';
 import 'package:phael_flor_app/data/models/article.dart' as model;
+import 'package:phael_flor_app/data/models/product.dart' as model;
 
 // ═══════════════════════════════════════════════════════════════
 // FILTER STATE
@@ -99,25 +101,24 @@ final articleByIdProvider = FutureProvider.family<model.Article?, String>((
   return repo.getArticleById(id);
 });
 
-/// All brandss (returns Drift Brand objects)
+/// All brands (returns Drift Brand objects)
 final brandsProvider = FutureProvider<List<db.Brand>>((ref) async {
   final repo = ref.read(productRepositoryProvider);
   return repo.getAllBrands();
 });
 
-/// All products (returns Drift Product objects)
-final productsProvider = FutureProvider<List<db.Product>>((ref) async {
+/// All products (returns Model objects now)
+final productsProvider = FutureProvider<List<model.Product>>((ref) async {
   final repo = ref.read(productRepositoryProvider);
   return repo.getAllProducts();
 });
 
 /// Products filtered by brand
-final productsByBrandProvider = FutureProvider.family<List<db.Product>, String>(
-  (ref, brandId) async {
-    final repo = ref.read(productRepositoryProvider);
-    return repo.getProductsByBrand(brandId);
-  },
-);
+final productsByBrandProvider =
+    FutureProvider.family<List<model.Product>, String>((ref, brandId) async {
+      final repo = ref.read(productRepositoryProvider);
+      return repo.getProductsByBrand(brandId);
+    });
 
 /// All tags
 final tagsProvider = FutureProvider<List<db.Tag>>((ref) async {
@@ -125,7 +126,6 @@ final tagsProvider = FutureProvider<List<db.Tag>>((ref) async {
   return repo.getAllTags();
 });
 
-/// All certifications
 /// All certifications
 final certificationsProvider = FutureProvider<List<db.Certification>>((
   ref,
@@ -163,7 +163,7 @@ final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
 /// State for pagination
 class PaginatedState {
-  final List<db.Product> products;
+  final List<model.Product> products; // Changed to Model
   final bool isLoading;
   final bool hasMore;
   final int page;
@@ -185,7 +185,7 @@ class PaginatedState {
   }
 
   PaginatedState copyWith({
-    List<db.Product>? products,
+    List<model.Product>? products,
     bool? isLoading,
     bool? hasMore,
     int? page,
@@ -252,7 +252,6 @@ class PaginatedProductsNotifier extends StateNotifier<PaginatedState> {
       );
     } catch (e) {
       state = state.copyWith(isLoading: false);
-      // Handle error gracefully (maybe show snackbar in UI via listener)
       debugPrint('Pagination error: $e');
     }
   }
@@ -264,12 +263,16 @@ final filteredProductsProvider =
       return PaginatedProductsNotifier(ref);
     });
 
-/// Category Labels
-final categoryLabelsProvider = FutureProvider<List<db.CategoryLabel>>((
-  ref,
-) async {
+/// Categories (Renamed from Labels)
+final categoriesProvider = FutureProvider<List<db.Category>>((ref) async {
   final repo = ref.read(productRepositoryProvider);
-  return repo.getCategoryLabels();
+  return repo.getAllCategories();
+});
+
+/// Forms (Renamed from Labels)
+final formsProvider = FutureProvider<List<db.Form>>((ref) async {
+  final repo = ref.read(productRepositoryProvider);
+  return repo.getAllForms();
 });
 
 /// Connectivity status
@@ -294,7 +297,9 @@ final favoriteArticleIdsProvider = StreamProvider<List<String>>((ref) {
 });
 
 /// Favorite Products (Resolved Objects)
-final favoriteProductsProvider = FutureProvider<List<db.Product>>((ref) async {
+final favoriteProductsProvider = FutureProvider<List<model.Product>>((
+  ref,
+) async {
   final favoriteIds = await ref.watch(favoriteIdsProvider.future);
   if (favoriteIds.isEmpty) return [];
 
@@ -314,41 +319,36 @@ final favoriteArticlesProvider = FutureProvider<List<model.Article>>((
 });
 
 /// Provider for dynamic category colors
-final categoryColorsProvider = StreamProvider<Map<String, Color>>((ref) {
-  final db = ref.watch(appDatabaseProvider);
-  return db.select(db.categoryLabels).watch().map((labels) {
-    final Map<String, Color> colors = {};
-    for (var label in labels) {
-      if (label.color != null && label.color!.startsWith('#')) {
-        try {
-          final hex = label.color!.replaceAll('#', '');
-          colors[label.key] = Color(int.parse('0xFF$hex'));
-        } catch (e) {
-          debugPrint('Error parsing color for ${label.key}: $e');
-        }
-      }
+final categoryColorsProvider = FutureProvider<Map<String, Color>>((ref) async {
+  final categories = await ref.watch(categoriesProvider.future);
+  final Map<String, Color> colors = {};
+  for (var cat in categories) {
+    if (cat.color != null) {
+      colors[cat.slug] = ColorUtils.parseHex(cat.color);
     }
-    return colors;
-  });
+  }
+  return colors;
 });
 
 /// Similar Products Provider (Clientside filtering)
-final similarProductsProvider = FutureProvider.family<List<db.Product>, String>(
-  (ref, productId) async {
-    final allProducts = await ref.watch(productsProvider.future);
-    final currentProduct = allProducts.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => allProducts.first,
-    );
+final similarProductsProvider =
+    FutureProvider.family<List<model.Product>, String>((ref, productId) async {
+      final allProducts = await ref.watch(productsProvider.future);
+      final currentProduct = allProducts.firstWhere(
+        (p) => p.id == productId,
+        orElse: () => allProducts.first,
+      );
 
-    if (currentProduct.category == null) return [];
+      // if (currentProduct.category == null) return [];
+      // Category is enum now? In Model yes.
 
-    // Filter by same category, exclude current, limit to 5
-    return allProducts
-        .where(
-          (p) => p.category == currentProduct.category && p.id != productId,
-        )
-        .take(5)
-        .toList();
-  },
-);
+      // Filter by same category, exclude current, limit to 5
+      return allProducts
+          .where(
+            (p) =>
+                p.categorySlug == currentProduct.categorySlug &&
+                p.id != productId,
+          )
+          .take(5)
+          .toList();
+    });

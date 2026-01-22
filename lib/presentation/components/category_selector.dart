@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../../core/constants/category_colors.dart';
+import '../../core/utils/color_utils.dart';
 import '../../core/providers/providers.dart';
 
 class CategorySelector extends ConsumerWidget {
@@ -13,48 +12,40 @@ class CategorySelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final labelsAsync = ref.watch(categoryLabelsProvider);
+    final categoriesAsync = ref.watch(categoriesProvider);
 
-    return labelsAsync.when(
-      data: (labels) {
+    return categoriesAsync.when(
+      data: (categoriesData) {
         final categories = [
           _CategoryItem(
-            key: null,
-            label: 'home.all'.tr(),
+            slug: null,
+            name: 'home.all'.tr(),
             icon: LucideIcons.layoutGrid,
             color: colorScheme.primary,
             iconUrl: null,
           ),
-          ...labels.map((l) {
-            // Determine icon based on key or fallback
-            final icon = CategoryColors.iconFor(l.key);
+          ...categoriesData.map((cat) {
+            // Determine icon from DB or fallback
+            // We use a generic icon since we don't have the mapping anymore,
+            // relying on iconUrl mostly.
+            const icon = LucideIcons.sprout;
 
-            // Use localized label from JSON
+            // Use localized name column
             final isFr = context.locale.languageCode == 'fr';
-            Map<String, dynamic> labelMap = {};
-            try {
-              labelMap = jsonDecode(l.label) as Map<String, dynamic>;
-            } catch (_) {
-              labelMap = {'fr': l.key};
-            }
-
-            final labelText = isFr
-                ? (labelMap['fr'] ?? l.key)
-                : (labelMap['en'] ?? labelMap['fr'] ?? l.key);
+            final name = isFr ? cat.nameFr : (cat.nameEn ?? cat.nameFr);
 
             // Parse color from DB or fallback
-            Color categoryColor = CategoryColors.forCategory(l.key);
-            final parsedColor = CategoryColors.parseColor(l.color);
-            if (parsedColor != null) {
-              categoryColor = parsedColor;
-            }
+            final categoryColor = ColorUtils.parseHex(
+              cat.color,
+              fallback: colorScheme.primary,
+            );
 
             return _CategoryItem(
-              key: l.key,
-              label: labelText,
+              slug: cat.slug,
+              name: name,
               icon: icon,
               color: categoryColor,
-              iconUrl: l.iconUrl,
+              iconUrl: cat.iconUrl,
             );
           }),
         ];
@@ -77,7 +68,7 @@ class CategorySelector extends ConsumerWidget {
               ),
             ),
             SizedBox(
-              height: 100,
+              height: 120,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -87,8 +78,8 @@ class CategorySelector extends ConsumerWidget {
                   return _buildCategoryItem(
                     context,
                     ref,
-                    cat.key,
-                    cat.label,
+                    cat.slug,
+                    cat.name,
                     cat.icon,
                     cat.color,
                     cat.iconUrl,
@@ -107,20 +98,20 @@ class CategorySelector extends ConsumerWidget {
   Widget _buildCategoryItem(
     BuildContext context,
     WidgetRef ref,
-    String? key,
-    String label,
+    String? slug,
+    String name,
     IconData icon,
     Color color,
     String? iconUrl,
   ) {
     final currentCategory = ref.watch(selectedCategoryProvider);
-    final isSelected = currentCategory == key;
+    final isSelected = currentCategory == slug;
     final colorScheme = Theme.of(context).colorScheme;
     final iconColor = isSelected ? Colors.white : color;
 
     return GestureDetector(
       onTap: () {
-        ref.read(selectedCategoryProvider.notifier).state = key;
+        ref.read(selectedCategoryProvider.notifier).state = slug;
       },
       child: Container(
         width: 84,
@@ -155,7 +146,7 @@ class CategorySelector extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              label,
+              name,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? color : colorScheme.onSurfaceVariant,
@@ -173,15 +164,15 @@ class CategorySelector extends ConsumerWidget {
 }
 
 class _CategoryItem {
-  final String? key;
-  final String label;
+  final String? slug;
+  final String name;
   final IconData icon;
   final Color color;
   final String? iconUrl;
 
   _CategoryItem({
-    required this.key,
-    required this.label,
+    required this.slug,
+    required this.name,
     required this.icon,
     required this.color,
     this.iconUrl,

@@ -64,8 +64,12 @@ class _FavoriteProductsTab extends ConsumerWidget {
     return favoritesAsync.when(
       data: (favorites) {
         if (favorites.isEmpty) {
-          return const FloralEmptyState(
+          return FloralEmptyState(
             subtitle: "No favorite products yet\nStart exploring!",
+            onPressed: () {
+              ref.read(navIndexProvider.notifier).state = 0; // Home
+              context.go('/home');
+            },
           );
         }
 
@@ -102,8 +106,14 @@ class _FavoriteArticlesTab extends ConsumerWidget {
     return favoritesAsync.when(
       data: (favorites) {
         if (favorites.isEmpty) {
-          return const FloralEmptyState(
+          return FloralEmptyState(
             subtitle: "No saved articles yet\nRead our journal!",
+            buttonText: "Go to Journal",
+            onPressed: () {
+              // Navigate to Journal Tab (Index 1)
+              ref.read(navIndexProvider.notifier).state = 1;
+              context.go('/home');
+            },
           );
         }
 

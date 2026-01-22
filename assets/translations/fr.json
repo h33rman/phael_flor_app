@@ -63,19 +63,7 @@
         "usage_tips": "Conseils d'utilisation"
     },
     "forms": {
-        "powder": "Poudre",
-        "liquid": "Liquide",
-        "leaf": "Feuille",
-        "bark": "Écorce",
-        "stick": "Bâton",
-        "seed": "Graine",
-        "root": "Racine",
-        "flower": "Fleur",
-        "gel": "Gel",
-        "oil": "Huile",
-        "paste": "Pâte",
-        "whole": "Entier",
-        "bean": "Gousse"
+        "unknown": "Autre"
     },
     "categories": {
         "essential_oil": "Huile Essentielle",
@@ -90,7 +78,11 @@
         "cooking": "Cuisine",
         "cleaning": "Nettoyage",
         "vegetable_oil": "Huile Végétale",
-        "misc": "Général"
+        "cosmetics": "Cosmétiques",
+        "extracts": "Extraits",
+        "superfoods": "Superaliments",
+        "misc": "Général",
+        "unknown": "Autre"
     },
     "journal": {
         "title": "Journal",

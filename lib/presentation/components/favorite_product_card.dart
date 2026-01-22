@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import '../../core/constants/category_colors.dart';
-import '../../data/sources/local/app_database.dart' as db;
+import '../../core/utils/color_utils.dart';
+import '../../core/providers/providers.dart';
+// import '../../data/sources/local/app_database.dart' as db; // Removed
+import '../../data/models/models.dart' as models;
+import '../../data/sources/local/app_database.dart'
+    as db; // Keep for Category types
 
 /// Horizontal product card specifically for the Favorites list
-class FavoriteProductCard extends StatelessWidget {
-  final db.Product product;
+class FavoriteProductCard extends ConsumerWidget {
+  final models.Product product;
   final String? brandName;
   final VoidCallback? onTap;
   final VoidCallback? onRemove;
@@ -21,20 +27,59 @@ class FavoriteProductCard extends StatelessWidget {
   });
 
   String _getLocalizedName(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    return locale == 'en' && product.nameEn != null
-        ? product.nameEn!
-        : product.nameFr;
+    final locale = context.locale.languageCode;
+    return product.name[locale] ??
+        product.name['en'] ??
+        product.name['fr'] ??
+        '';
   }
 
-  Color get _categoryColor => CategoryColors.forCategory(product.category);
+  db.Category? _getCategoryLabel(WidgetRef ref) {
+    if (product.categorySlug.isEmpty) return null;
+    final slug = product.categorySlug;
+    return ref
+        .watch(categoriesProvider)
+        .asData
+        ?.value
+        .firstWhere(
+          (c) => c.slug == slug,
+          orElse: () => db.Category(
+            slug: slug,
+            nameFr: slug,
+            color: null,
+            iconUrl: null,
+            nameEn: null,
+          ),
+        );
+  }
+
+  Color _getCategoryColor(WidgetRef ref, db.Category? category) {
+    return ColorUtils.parseHex(category?.color);
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final categoryData = _getCategoryLabel(ref);
+    final categoryColor = _getCategoryColor(ref, categoryData);
+
+    // Determine icon for category fallback
+    // Determine icon for category fallback
+    const catIcon = LucideIcons.sprout;
+
+    // Determine localized label
+    String categoryText = product.categorySlug;
+    if (categoryData != null) {
+      final locale = context.locale.languageCode;
+      categoryText = (locale == 'en' && categoryData.nameEn != null)
+          ? categoryData.nameEn!
+          : categoryData.nameFr;
+    } else {
+      categoryText = 'categories.${product.categorySlug}'.tr();
+    }
 
     // Premium visual: Colored shadow based on category
-    final glowColor = _categoryColor.withValues(alpha: 0.15);
+    final glowColor = categoryColor.withValues(alpha: 0.15);
 
     return Dismissible(
       key: ValueKey(product.id),
@@ -89,16 +134,17 @@ class FavoriteProductCard extends StatelessWidget {
                           left: Radius.circular(24),
                         ),
                         child: Container(
-                          color: _categoryColor.withValues(alpha: 0.08),
+                          color: categoryColor.withValues(alpha: 0.08),
                           child: product.imageUrl != null
                               ? CachedNetworkImage(
                                   imageUrl: product.imageUrl!,
                                   fit: BoxFit.cover,
-                                  placeholder: (_, __) => _buildPlaceholder(),
+                                  placeholder: (_, __) =>
+                                      _buildPlaceholder(categoryColor),
                                   errorWidget: (_, __, ___) =>
-                                      _buildPlaceholder(),
+                                      _buildPlaceholder(categoryColor),
                                 )
-                              : _buildPlaceholder(),
+                              : _buildPlaceholder(categoryColor),
                         ),
                       ),
 
@@ -110,7 +156,7 @@ class FavoriteProductCard extends StatelessWidget {
                           width: 4,
                           height: 24,
                           decoration: BoxDecoration(
-                            color: _categoryColor,
+                            color: categoryColor,
                             borderRadius: const BorderRadius.horizontal(
                               right: Radius.circular(2),
                             ),
@@ -129,171 +175,128 @@ class FavoriteProductCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title (Cleaner Typography)
-                            Text(
-                              _getLocalizedName(context),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                    letterSpacing: -0.5,
-                                  ),
-                            ),
-
-                            // Scientific Name (New - Fills space)
-                            if (product.scientificName != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(
-                                  product.scientificName!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        fontStyle: FontStyle.italic,
-                                        color: colorScheme.onSurfaceVariant
-                                            .withValues(alpha: 0.8),
-                                        fontSize: 12,
-                                      ),
-                                ),
+                        // 1. Title (Max 2 lines)
+                        Text(
+                          _getLocalizedName(context),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                height: 1.2,
+                                letterSpacing: -0.3,
                               ),
+                        ),
 
-                            const SizedBox(height: 6),
+                        // 2. Scientific Name (Removed)
+                        const SizedBox(height: 6),
 
-                            // Brand Name with Icon
-                            Row(
-                              children: [
-                                Icon(
-                                  LucideIcons.store,
-                                  size: 12,
-                                  color: colorScheme.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    brandName ?? 'Phael Flor',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                        // 3. Category Label (Updated to use categoryData)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: categoryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (categoryData?.iconUrl != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: SvgPicture.network(
+                                    categoryData!.iconUrl!,
+                                    width: 10,
+                                    height: 10,
+                                    colorFilter: ColorFilter.mode(
+                                      categoryColor,
+                                      BlendMode.srcIn,
+                                    ),
+                                    placeholderBuilder: (_) => Icon(
+                                      catIcon,
+                                      size: 10,
+                                      color: categoryColor,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: Icon(
+                                    catIcon,
+                                    size: 10,
+                                    color: categoryColor,
                                   ),
                                 ),
-                              ],
+                              Text(
+                                categoryText,
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(
+                                      color: categoryColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        // 4. Brand Name
+                        Row(
+                          children: [
+                            Icon(
+                              LucideIcons.store,
+                              size: 12,
+                              color: colorScheme.primary,
                             ),
-                            const SizedBox(height: 6),
-
-                            // Tags Row: Category + Form
-                            Row(
-                              children: [
-                                // Category Label
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _categoryColor.withValues(
-                                      alpha: 0.1,
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                brandName ?? 'Phael Flor',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    'categories.${product.category ?? 'misc'}'
-                                        .tr(),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: _categoryColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // Form Label (New)
-                                if (product.form != null)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.secondaryContainer
-                                          .withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      'forms.${product.form}'.tr(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            color: colorScheme
-                                                .onSecondaryContainer,
-                                            fontSize: 10,
-                                          ),
-                                    ),
-                                  ),
-                              ],
+                              ),
                             ),
                           ],
                         ),
 
-                        // Bottom Row: Weight + Action Hint
+                        const SizedBox(height: 6),
+
+                        // 5. Hashtags (Removed)
+                        const SizedBox(height: 6),
+
+                        // 6. Weight/Volume
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            // Weight Badge (Enhanced visibility)
-                            if (product.weightVolume != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: colorScheme.outline.withValues(
-                                      alpha: 0.1,
-                                    ),
+                            Icon(
+                              LucideIcons.package,
+                              size: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              [
+                                if (product.weight != null) product.weight,
+                                if (product.volume != null) product.volume,
+                              ].join(' - '),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    fontSize: 11,
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      LucideIcons.package,
-                                      size: 12,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      product.weightVolume!,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            fontSize: 11,
-                                            color: colorScheme.onSurfaceVariant,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              const SizedBox.shrink(),
+                            ),
                           ],
                         ),
                       ],
@@ -308,12 +311,12 @@ class FavoriteProductCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(Color color) {
     return Center(
       child: Icon(
         LucideIcons.leaf,
         size: 32,
-        color: _categoryColor.withValues(alpha: 0.4),
+        color: color.withValues(alpha: 0.4),
       ),
     );
   }
